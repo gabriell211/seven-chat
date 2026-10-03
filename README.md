@@ -126,7 +126,7 @@ O Seven Chat aceita cadastro de pessoas com **idade entre 13 e 99 anos**.
 - idade exibida no perfil;
 - data de nascimento não deve ser editável livremente após o cadastro;
 - correção de data de nascimento exige fluxo específico de suporte/verificação;
-- idade é recalculada a partir da data de nascimento;
+- idade é recalculada a partir da data de nascimento e exibida no perfil;
 - o frontend nunca deve aceitar idade digitada como fonte de verdade;
 - usuários fora do intervalo 13–99 não concluem o cadastro.
 
@@ -160,6 +160,9 @@ Requisitos obrigatórios de loja, legislação ou região devem ser tratados com
 ⬜ Verificação de e-mail  
 ⬜ Bloqueio de provedores de e-mail descartável  
 ⬜ Username único  
+⬜ Controle anti-múltiplas contas  
+⬜ Telefone como sinal opcional de unicidade/risco, sem exibição pública  
+⬜ Verificação de posse do telefone quando ele for usado como trava de unicidade  
 ⬜ Recuperação de senha  
 ⬜ Alteração de senha  
 ⬜ Alteração de e-mail com reverificação  
@@ -346,7 +349,7 @@ A autenticação não pode depender apenas de estado salvo no cliente.
 ⬜ Stickers  
 ⬜ GIFs  
 ⬜ Fotos  
-⬜ Vídeos  
+⬜ Vídeos para usuários VIP/elegíveis  
 ⬜ Áudios  
 ⬜ Arquivos permitidos  
 ⬜ Responder  
@@ -574,7 +577,9 @@ Não haverá upload direto de foto ou vídeo dentro do chat da live.
 - moedas compradas via IAP não expiram onde a política da plataforma proibir;
 - Diamantes promocionais devem ser distinguíveis dos comprados;
 - transferência direta P2P de Diamantes não é permitida por padrão;
-- presentes consomem Diamantes através de transação atômica.
+- presentes consomem Diamantes através de transação atômica;
+- Mega Fã só pode ser adquirido com Diamantes;
+- Diamantes promocionais não podem ser convertidos diretamente em dinheiro.
 
 ### Ledger de dupla entrada
 
@@ -655,6 +660,8 @@ O catálogo deverá suportar aproximadamente **300 presentes** sem exigir 300 co
 - Mega Fã;
 - 3D/cinematográficos.
 
+Exemplos de presentes premium podem incluir experiências de tela cheia, como uma **Roda Gigante**, veículos, castelos ou outros gifts cinematográficos, sempre usando assets próprios do Seven Chat.
+
 ### Tipos
 
 ⬜ Estático  
@@ -722,6 +729,8 @@ O Seven Chat terá assinatura premium.
 | Molduras adicionais | — | Sim | Sim |
 | Benefícios sazonais | — | Sim | Sim |
 | Prioridade de suporte | — | — | Sim |
+
+Benefícios cosméticos podem incluir **até 3 molduras animadas sazonais por mês** para planos elegíveis, sem remover itens já adquiridos fora dessa modalidade.
 
 ### Assinatura
 
