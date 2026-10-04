@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Vip(){return <AppShell><div className="card"><h2>VIP</h2><p className="muted">VIP, VIP+ e Elite com entitlement validado no servidor. Pagamentos só serão confirmados após validação do provedor.</p></div></AppShell>}
