@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, desc, eq, lt, ne } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { conversationMembers, conversations, mediaAssets, messages } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
@@ -24,7 +24,7 @@ export async function GET(req:Request,{params}:{params:Promise<{id:string}>}){
       id:messages.id,senderId:messages.senderId,type:messages.type,body:messages.body,
       mediaAssetId:messages.mediaAssetId,viewOnce:messages.viewOnce,openedAt:messages.openedAt,
       createdAt:messages.createdAt,editedAt:messages.editedAt
-    }).from(messages).where(and(eq(messages.conversationId,id),cursor?lt(messages.createdAt,cursor):undefined,eq(messages.deletedAt,null as never)))
+    }).from(messages).where(and(eq(messages.conversationId,id),cursor?lt(messages.createdAt,cursor):undefined,isNull(messages.deletedAt)))
       .orderBy(desc(messages.createdAt)).limit(51);
     const page=rows.slice(0,50);
     return NextResponse.json({data:page,nextCursor:rows.length>50?page.at(-1)?.createdAt.toISOString()??null:null});
