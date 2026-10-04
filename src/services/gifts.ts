@@ -18,10 +18,11 @@ export class GiftError extends Error{
 export async function sendGift(input:SendGiftInput):Promise<{transactionId:string;giftTransactionId:string}>{
   if(input.senderId===input.receiverId)throw new GiftError("GIFT_SELF_SEND","Você não pode enviar gift para si mesmo.");
   if(!Number.isInteger(input.quantity)||input.quantity<1||input.quantity>100)throw new GiftError("GIFT_INVALID_QUANTITY","Quantidade inválida.");
+  const effectiveIdempotencyKey=`gift:${input.senderId}:${input.idempotencyKey}`;
   const client=await pool.connect();
   try{
     await client.query("begin isolation level serializable");
-    const existing=await client.query<{id:string}>("select id from ledger_transactions where idempotency_key=$1 limit 1",[input.idempotencyKey]);
+    const existing=await client.query<{id:string}>("select id from ledger_transactions where idempotency_key=$1 limit 1",[effectiveIdempotencyKey]);
     if(existing.rowCount){
       const giftTx=await client.query<{id:string}>("select id from gift_transactions where ledger_transaction_id=$1 limit 1",[existing.rows[0].id]);
       await client.query("commit");
@@ -54,7 +55,7 @@ export async function sendGift(input:SendGiftInput):Promise<{transactionId:strin
     const giftTransactionId=randomUUID();
     await client.query(
       "insert into ledger_transactions(id,type,reference_type,reference_id,idempotency_key,status,posted_at) values($1,'gift_purchase','gift',$2,$3,'posted',now())",
-      [transactionId,input.giftId,input.idempotencyKey]
+      [transactionId,input.giftId,effectiveIdempotencyKey]
     );
     await client.query(
       "insert into ledger_entries(id,transaction_id,account_id,direction,amount) values($1,$2,$3,'debit',$4),($5,$2,$6,'credit',$4)",
