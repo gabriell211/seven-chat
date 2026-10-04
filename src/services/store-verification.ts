@@ -5,6 +5,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { diamondPackages, purchaseIntents, vipPlans } from "@/db/schema";
 import { fulfillVerifiedPurchase } from "@/services/payments";
+import { finalizeGooglePurchase } from "@/services/store-actions";
 
 export class StoreVerificationError extends Error{constructor(public readonly code:string,message:string){super(message);}}
 
@@ -50,7 +51,6 @@ export async function verifyAndFulfillApple(input:{purchaserUserId:string;intent
     receiptHash:createHash("sha256").update(input.signedTransaction).digest("hex"),
     metadata:{environment:transaction.environment,originalTransactionId:transaction.originalTransactionId}
   });
-  await db.update(purchaseIntents).set({status:"consumed",consumedAt:new Date()}).where(eq(purchaseIntents.id,intent.id));
   return result;
 }
 
@@ -95,9 +95,10 @@ export async function verifyAndFulfillGoogle(input:{purchaserUserId:string;inten
       purchaseIntentId:intent.id,storeProductId,externalTransactionId:externalId,receiptHash:createHash("sha256").update(input.purchaseToken).digest("hex"),
       metadata:{regionCode:purchase.regionCode}
     });
-    await auth.request({url:`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/products/${encodeURIComponent(storeProductId)}/tokens/${encodeURIComponent(input.purchaseToken)}:consume`,method:"POST"});
-    await db.update(purchaseIntents).set({status:"consumed",consumedAt:new Date()}).where(eq(purchaseIntents.id,intent.id));
-    return result;
+    const storeFinalization=await finalizeGooglePurchase({
+      action:"consume",externalTransactionId:externalId,purchaseToken:input.purchaseToken,productId:storeProductId
+    });
+    return {...result,storeFinalization};
   }
   const url=`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/subscriptionsv2/tokens/${encodeURIComponent(input.purchaseToken)}`;
   const response=await auth.request<SubscriptionPurchaseV2>({url});
@@ -112,9 +113,10 @@ export async function verifyAndFulfillGoogle(input:{purchaserUserId:string;inten
     purchaseIntentId:intent.id,storeProductId,externalTransactionId:externalId,receiptHash:createHash("sha256").update(input.purchaseToken).digest("hex"),
     metadata:{regionCode:purchase.regionCode,expiryTime:line.expiryTime}
   });
-  if(purchase.acknowledgementState==="ACKNOWLEDGEMENT_STATE_PENDING"){
-    await auth.request({url:`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(packageName)}/purchases/subscriptions/${encodeURIComponent(storeProductId)}/tokens/${encodeURIComponent(input.purchaseToken)}:acknowledge`,method:"POST"});
-  }
-  await db.update(purchaseIntents).set({status:"consumed",consumedAt:new Date()}).where(eq(purchaseIntents.id,intent.id));
-  return result;
+  const storeFinalization=purchase.acknowledgementState==="ACKNOWLEDGEMENT_STATE_PENDING"
+    ?await finalizeGooglePurchase({
+      action:"acknowledge",externalTransactionId:externalId,purchaseToken:input.purchaseToken,productId:storeProductId
+    })
+    :{completed:true,queued:false};
+  return {...result,storeFinalization};
 }
