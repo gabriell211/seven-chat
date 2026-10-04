@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { liveBattles, liveSessions, rooms } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { publishRealtimeBestEffort } from "@/lib/realtime";
 import { GiftError, sendGift } from "@/services/gifts";
 import { areUsersBlocked } from "@/services/social-guard";
@@ -18,6 +19,7 @@ const schema=z.discriminatedUnion("contextType",[
 export async function POST(req:Request){
   try{
     const session=await requireRequestSession(req);
+    const limited=await enforceRateLimit(req,"financial",session.userId);if(limited)return limited;
     const parsed=schema.safeParse(await req.json().catch(()=>null));
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Dados do gift inválidos."}},{status:422});
     let receiverId:string,contextType:"live"|"room"|undefined,contextId:string|undefined;
