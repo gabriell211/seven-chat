@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { GiftError, sendGift } from "@/services/gifts";
+import { enforceRateLimit } from "@/lib/rate-limit";
 const schema=z.object({receiverId:z.uuid(),giftId:z.uuid(),quantity:z.number().int().min(1).max(100).default(1),idempotencyKey:z.string().min(16).max(128)});
 export async function POST(req:Request){
   try{
     const session=await requireSession();
+    const limited=await enforceRateLimit(req,"financial",session.userId); if(limited)return limited;
     const parsed=schema.safeParse(await req.json());
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Dados do gift inválidos."}},{status:422});
     const result=await sendGift({senderId:session.userId,...parsed.data});
