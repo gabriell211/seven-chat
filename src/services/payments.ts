@@ -4,7 +4,9 @@ import { ensureLedgerAccount, ensureUserDiamondAccount, postLedgerTransaction } 
 
 export type VerifiedStorePurchase={
   provider:"apple"|"google";
-  userId:string;
+  purchaserUserId:string;
+  beneficiaryUserId?:string;
+  purchaseIntentId?:string;
   storeProductId:string;
   externalTransactionId:string;
   currency?:string;
@@ -39,13 +41,14 @@ export async function fulfillVerifiedPurchase(p:VerifiedStorePurchase){
     await client.query(
       `insert into payments(id,user_id,provider,product_type,sku,external_transaction_id,status,currency,amount_minor,receipt_hash,raw_metadata,paid_at)
        values($1,$2,$3,$4,$5,$6,'paid',$7,$8,$9,$10,now())`,
-      [paymentId,p.userId,p.provider,item.kind,item.sku,p.externalTransactionId,p.currency??null,p.amountMinor??null,p.receiptHash??null,JSON.stringify(p.metadata??{})]
+      [paymentId,p.purchaserUserId,p.provider,item.kind,item.sku,p.externalTransactionId,p.currency??null,p.amountMinor??null,p.receiptHash??null,JSON.stringify({...p.metadata,purchaseIntentId:p.purchaseIntentId??null,beneficiaryUserId:p.beneficiaryUserId??p.purchaserUserId})]
     );
 
     if(item.kind==="diamonds"){
       const amount=(item.diamonds??0)+(item.bonus_diamonds??0);
       if(amount<=0)throw new PaymentError("INVALID_DIAMOND_PACKAGE","Pacote de Diamantes inválido.");
-      const userAccount=await ensureUserDiamondAccount(client,p.userId);
+      if(p.beneficiaryUserId&&p.beneficiaryUserId!==p.purchaserUserId)throw new PaymentError("DIAMONDS_NOT_GIFTABLE","Pacotes de Diamantes não podem ser redirecionados.");
+      const userAccount=await ensureUserDiamondAccount(client,p.purchaserUserId);
       const source=await ensureLedgerAccount(client,"system:diamonds:source","system",null);
       await postLedgerTransaction(client,{
         type:"diamond_purchase",referenceType:"payment",referenceId:paymentId,
@@ -56,16 +59,23 @@ export async function fulfillVerifiedPurchase(p:VerifiedStorePurchase){
       if(!item.tier||!item.duration_days)throw new PaymentError("INVALID_VIP_PLAN","Plano VIP inválido.");
       const current=await client.query<{end_at:Date}>(
         "select max(ends_at) end_at from vip_subscriptions where user_id=$1 and status in ('active','grace_period') and ends_at>now()",
-        [p.userId]
+        [p.beneficiaryUserId??p.purchaserUserId]
       );
       const base=current.rows[0]?.end_at&&new Date(current.rows[0].end_at)>new Date()?new Date(current.rows[0].end_at):new Date();
       const endsAt=new Date(base.getTime()+item.duration_days*86400000);
       await client.query(
         `insert into vip_subscriptions(id,user_id,plan,status,provider,external_id,starts_at,ends_at)
          values($1,$2,$3,'active',$4,$5,$6,$7)`,
-        [randomUUID(),p.userId,item.tier,p.provider,p.externalTransactionId,base,endsAt]
+        [randomUUID(),p.beneficiaryUserId??p.purchaserUserId,item.tier,p.provider,p.externalTransactionId,base,endsAt]
       );
-      await client.query("update profiles set is_vip=true,updated_at=now() where user_id=$1",[p.userId]);
+      const beneficiary=p.beneficiaryUserId??p.purchaserUserId;
+      await client.query("update profiles set is_vip=true,updated_at=now() where user_id=$1",[beneficiary]);
+      if(beneficiary!==p.purchaserUserId){
+        await client.query(
+          "insert into vip_gifts(id,sender_id,receiver_id,plan_id,payment_id,starts_at,ends_at) values($1,$2,$3,$4,$5,$6,$7)",
+          [randomUUID(),p.purchaserUserId,beneficiary,item.id,paymentId,base,endsAt]
+        );
+      }
     }
 
     await client.query("commit");
