@@ -55,6 +55,8 @@ export async function POST(req:Request){
     return NextResponse.json({data},{status:201});
   }catch(error){
     if(error instanceof GiftError)return NextResponse.json({error:{code:error.code,message:error.message}},{status:["GIFT_INSUFFICIENT_BALANCE","GIFT_RETRY"].includes(error.code)?409:422});
-    return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});
+    const code=error instanceof Error?error.message:"GIFT_FAILED";
+    if(code==="UNAUTHORIZED")return NextResponse.json({error:{code,message:"Faça login."}},{status:401});
+    return NextResponse.json({error:{code:"GIFT_FAILED",message:"Não foi possível concluir o gift."}},{status:500});
   }
 }
