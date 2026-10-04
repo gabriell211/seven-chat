@@ -102,9 +102,10 @@ async function clamavScan(path:string){
     socket.on("connect",()=>{
       socket.write(Buffer.from("zINSTREAM\0"));
       const stream=createReadStream(path,{highWaterMark:64*1024});
-      stream.on("data",(chunk:Buffer)=>{
-        const length=Buffer.alloc(4);length.writeUInt32BE(chunk.length);
-        socket.write(length);socket.write(chunk);
+      stream.on("data",(chunk)=>{
+        const buffer=Buffer.isBuffer(chunk)?chunk:Buffer.from(chunk);
+        const length=Buffer.alloc(4);length.writeUInt32BE(buffer.length);
+        socket.write(length);socket.write(buffer);
       });
       stream.on("end",()=>socket.write(Buffer.alloc(4)));
       stream.on("error",reject);
