@@ -176,3 +176,136 @@ export const reports = pgTable("reports", {
   priority: integer("priority").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [index("reports_status_priority_idx").on(t.status, t.priority, t.createdAt)]);
+
+
+export const stories = pgTable("stories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  textContent: text("text_content"),
+  mediaUrl: text("media_url"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("stories_author_created_idx").on(t.authorId, t.createdAt), index("stories_expires_idx").on(t.expiresAt)]);
+
+export const storyViews = pgTable("story_views", {
+  storyId: uuid("story_id").notNull().references(() => stories.id, { onDelete: "cascade" }),
+  viewerId: uuid("viewer_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  viewedAt: timestamp("viewed_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.storyId, t.viewerId] })]);
+
+export const reels = pgTable("reels", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  caption: text("caption").notNull().default(""),
+  videoUrl: text("video_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  durationMs: integer("duration_ms").notNull(),
+  visibility: postVisibility("visibility").notNull().default("public"),
+  viewCount: integer("view_count").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("reels_author_created_idx").on(t.authorId, t.createdAt), index("reels_created_idx").on(t.createdAt)]);
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+  entityType: text("entity_type"),
+  entityId: uuid("entity_id"),
+  payload: jsonb("payload").notNull().default({}),
+  readAt: timestamp("read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("notifications_user_read_created_idx").on(t.userId, t.readAt, t.createdAt)]);
+
+export const rooms = pgTable("rooms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hostId: uuid("host_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  visibility: text("visibility").notNull().default("public"),
+  passwordHash: text("password_hash"),
+  vipOnly: boolean("vip_only").notNull().default(false),
+  stageLimit: integer("stage_limit").notNull().default(10),
+  status: text("status").notNull().default("active"),
+  rtcRoomName: text("rtc_room_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  endedAt: timestamp("ended_at", { withTimezone: true })
+}, (t) => [index("rooms_status_created_idx").on(t.status, t.createdAt)]);
+
+export const roomMembers = pgTable("room_members", {
+  roomId: uuid("room_id").notNull().references(() => rooms.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("listener"),
+  muted: boolean("muted").notNull().default(false),
+  joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.roomId, t.userId] }), index("room_members_user_idx").on(t.userId)]);
+
+export const liveSessions = pgTable("live_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  hostId: uuid("host_id").notNull().references(() => users.id),
+  title: text("title").notNull(),
+  category: text("category"),
+  thumbnailUrl: text("thumbnail_url"),
+  status: text("status").notNull().default("created"),
+  rtcRoomName: text("rtc_room_name").notNull(),
+  viewerCount: integer("viewer_count").notNull().default(0),
+  peakViewers: integer("peak_viewers").notNull().default(0),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("live_status_started_idx").on(t.status, t.startedAt)]);
+
+export const liveGuests = pgTable("live_guests", {
+  liveId: uuid("live_id").notNull().references(() => liveSessions.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull().default("guest"),
+  status: text("status").notNull().default("invited"),
+  joinedAt: timestamp("joined_at", { withTimezone: true })
+}, (t) => [primaryKey({ columns: [t.liveId, t.userId] })]);
+
+export const calls = pgTable("calls", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  conversationId: uuid("conversation_id").references(() => conversations.id, { onDelete: "set null" }),
+  callerId: uuid("caller_id").notNull().references(() => users.id),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("created"),
+  rtcRoomName: text("rtc_room_name").notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("calls_conversation_created_idx").on(t.conversationId, t.createdAt)]);
+
+export const vipSubscriptions = pgTable("vip_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  plan: text("plan").notNull(),
+  status: text("status").notNull(),
+  provider: text("provider").notNull(),
+  externalId: text("external_id"),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("vip_user_status_idx").on(t.userId, t.status, t.endsAt)]);
+
+export const fanStatuses = pgTable("fan_statuses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fanUserId: uuid("fan_user_id").notNull().references(() => users.id),
+  creatorUserId: uuid("creator_user_id").notNull().references(() => users.id),
+  status: text("status").notNull().default("active"),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  ledgerTransactionId: uuid("ledger_transaction_id").notNull().references(() => ledgerTransactions.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [uniqueIndex("fan_active_period_uq").on(t.fanUserId, t.creatorUserId, t.endsAt)]);
+
+export const moderationActions = pgTable("moderation_actions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorId: uuid("actor_id").notNull().references(() => users.id),
+  targetUserId: uuid("target_user_id").references(() => users.id),
+  reportId: uuid("report_id").references(() => reports.id),
+  action: text("action").notNull(),
+  reason: text("reason").notNull(),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("moderation_target_created_idx").on(t.targetUserId, t.createdAt)]);
