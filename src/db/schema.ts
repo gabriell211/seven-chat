@@ -309,3 +309,14 @@ export const moderationActions = pgTable("moderation_actions", {
   metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [index("moderation_target_created_idx").on(t.targetUserId, t.createdAt)]);
+
+
+export const oauthAccounts = pgTable("oauth_accounts", {
+  provider: text("provider").notNull(),
+  providerAccountId: text("provider_account_id").notNull(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  primaryKey({ columns: [t.provider, t.providerAccountId] }),
+  uniqueIndex("oauth_provider_user_uq").on(t.provider, t.userId)
+]);
