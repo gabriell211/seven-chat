@@ -28,9 +28,13 @@ export async function sendGift(input:SendGiftInput):Promise<{transactionId:strin
     const gift=await client.query<{price_diamonds:number}>("select price_diamonds from gifts where id=$1 and is_active=true for share",[input.giftId]);
     if(!gift.rowCount)throw new GiftError("GIFT_NOT_AVAILABLE","Gift indisponível.");
     const amount=gift.rows[0].price_diamonds*input.quantity;
+    await client.query(
+      "insert into ledger_accounts(id,account_key,owner_type,owner_id,asset,status) values($1,$2,'user',$3,'diamonds','active') on conflict(account_key) do nothing",
+      [randomUUID(),"user:"+input.senderId+":diamonds",input.senderId]
+    );
     const senderAccount=await client.query<{id:string}>(
-      "select id from ledger_accounts where owner_type='user' and owner_id=$1 and asset='diamonds' and status='active' for update",
-      [input.senderId]
+      "select id from ledger_accounts where account_key=$1 and status='active' for update",
+      ["user:"+input.senderId+":diamonds"]
     );
     if(!senderAccount.rowCount)throw new GiftError("WALLET_NOT_FOUND","Carteira não encontrada.");
     const balanceResult=await client.query<{balance:string}>(
@@ -39,10 +43,11 @@ export async function sendGift(input:SendGiftInput):Promise<{transactionId:strin
     );
     const balance=Number(balanceResult.rows[0]?.balance??0);
     if(balance<amount)throw new GiftError("GIFT_INSUFFICIENT_BALANCE","Saldo insuficiente.");
-    let sink=await client.query<{id:string}>("select id from ledger_accounts where owner_type='system' and owner_id is null and asset='diamonds' and status='active' order by created_at asc limit 1 for update");
-    if(!sink.rowCount){
-      sink=await client.query<{id:string}>("insert into ledger_accounts(id,owner_type,owner_id,asset,status) values($1,'system',null,'diamonds','active') returning id",[randomUUID()]);
-    }
+    await client.query(
+      "insert into ledger_accounts(id,account_key,owner_type,owner_id,asset,status) values($1,'system:diamonds:sink','system',null,'diamonds','active') on conflict(account_key) do nothing",
+      [randomUUID()]
+    );
+    const sink=await client.query<{id:string}>("select id from ledger_accounts where account_key='system:diamonds:sink' and status='active' for update");
     const transactionId=randomUUID();
     const giftTransactionId=randomUUID();
     await client.query(
