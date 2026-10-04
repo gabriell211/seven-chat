@@ -3,7 +3,8 @@ import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { calls, conversationMembers, liveGuests, liveSessions, roomMembers, rooms } from "@/db/schema";
-import { requireSession } from "@/lib/auth";
+import { requireRequestSession } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createRtcToken } from "@/lib/rtc";
 
 const schema=z.discriminatedUnion("resourceType",[
@@ -14,7 +15,8 @@ const schema=z.discriminatedUnion("resourceType",[
 
 export async function POST(req:Request){
   try{
-    const session=await requireSession();
+    const session=await requireRequestSession(req);
+    const limited=await enforceRateLimit(req,"write",session.userId);if(limited)return limited;
     const parsed=schema.safeParse(await req.json());
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Recurso RTC inválido."}},{status:422});
     let roomName:string|undefined;
