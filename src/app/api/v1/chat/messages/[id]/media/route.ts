@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { conversationMembers, mediaAssets, messages } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
@@ -20,7 +20,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     if(!member)return NextResponse.json({error:{code:"FORBIDDEN",message:"Sem acesso à mídia."}},{status:403});
     if(row.viewOnce&&row.senderId!==session.userId){
       const opened=await db.update(messages).set({openedAt:new Date()})
-        .where(and(eq(messages.id,id),eq(messages.openedAt,null as never))).returning({id:messages.id});
+        .where(and(eq(messages.id,id),isNull(messages.openedAt))).returning({id:messages.id});
       if(!opened.length)return NextResponse.json({error:{code:"VIEW_ONCE_EXPIRED",message:"Esta mídia já foi aberta."}},{status:410});
     }
     const expiresIn=row.viewOnce?30:300;
