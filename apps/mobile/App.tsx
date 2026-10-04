@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from "react";
-import {ActivityIndicator,FlatList,Pressable,SafeAreaView,StyleSheet,Text,TextInput,View} from "react-native";
+import {ActivityIndicator,FlatList,Platform,Pressable,SafeAreaView,StyleSheet,Text,TextInput,View} from "react-native";
 import {QueryClient,QueryClientProvider,useQuery} from "@tanstack/react-query";
 import {api} from "./src/api";
 import {clearToken,getToken,setToken} from "./src/auth";
@@ -13,7 +13,7 @@ function Login({onDone}:{onDone:()=>void}){
   const [identifier,setIdentifier]=useState(""),[password,setPassword]=useState(""),[error,setError]=useState("");
   const submit=async()=>{try{
     setError("");
-    const result=await api<{data:{accessToken:string}}>("/api/v1/auth/login",{method:"POST",body:JSON.stringify({identifier,password,deviceName:"Seven Chat Mobile",platform:"android"})});
+    const result=await api<{data:{accessToken:string}}>("/api/v1/auth/login",{method:"POST",body:JSON.stringify({identifier,password,deviceName:"Seven Chat Mobile",platform:Platform.OS==="ios"?"ios":"android"})});
     await setToken(result.data.accessToken);onDone();
   }catch(e){setError(e instanceof Error?e.message:"Falha ao entrar");}};
   return <SafeAreaView style={s.center}><View style={s.authCard}><Text style={s.logo}>Seven <Text style={s.brand}>Chat</Text></Text><Text style={s.muted}>Entre para continuar</Text><TextInput accessibilityLabel="E-mail ou usuário" autoCapitalize="none" value={identifier} onChangeText={setIdentifier} placeholder="E-mail ou @usuário" placeholderTextColor={theme.muted} style={s.input}/><TextInput accessibilityLabel="Senha" secureTextEntry value={password} onChangeText={setPassword} placeholder="Senha" placeholderTextColor={theme.muted} style={s.input}/>{error?<Text style={s.error}>{error}</Text>:null}<Pressable accessibilityRole="button" onPress={submit} style={s.button}><Text style={s.buttonText}>Entrar</Text></Pressable></View></SafeAreaView>;
