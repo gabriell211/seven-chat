@@ -68,3 +68,22 @@ jobs:
       - run: npm install
       - run: npm run typecheck
       - run: npm run build
+
+
+  migration_snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/seven_chat
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: rm -rf drizzle && npm run db:generate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drizzle-migrations
+          path: drizzle
+          if-no-files-found: error
