@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Settings(){return <AppShell><div className="card"><h2>Configurações</h2><p className="muted">Privacidade, sessões, segurança, idioma, notificações, exportação e exclusão de conta.</p></div></AppShell>}
