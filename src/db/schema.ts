@@ -101,6 +101,7 @@ export const messages = pgTable("messages", {
   type: messageType("type").notNull().default("text"),
   body: text("body"),
   mediaUrl: text("media_url"),
+  mediaAssetId: uuid("media_asset_id"),
   viewOnce: boolean("view_once").notNull().default(false),
   openedAt: timestamp("opened_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -403,3 +404,18 @@ export const mediaProcessingJobs = pgTable("media_processing_jobs", {
 }, (t) => [
   index("media_jobs_queue_idx").on(t.status, t.availableAt)
 ]);
+
+
+export const messageReceipts = pgTable("message_receipts", {
+  messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  readAt: timestamp("read_at", { withTimezone: true })
+}, (t) => [primaryKey({ columns: [t.messageId, t.userId] }), index("message_receipts_user_idx").on(t.userId, t.readAt)]);
+
+export const messageReactions = pgTable("message_reactions", {
+  messageId: uuid("message_id").notNull().references(() => messages.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reaction: text("reaction").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.messageId, t.userId] })]);
