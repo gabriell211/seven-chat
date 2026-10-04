@@ -6,10 +6,11 @@ export class FanError extends Error{constructor(public readonly code:string,mess
 
 export async function buyMegaFan(input:{fanUserId:string;creatorUserId:string;productCode:string;idempotencyKey:string}){
   if(input.fanUserId===input.creatorUserId)throw new FanError("FAN_SELF_PURCHASE","Mega Fã é ligado a outro criador.");
+  const effectiveIdempotencyKey=`fan:${input.fanUserId}:${input.idempotencyKey}`;
   const client=await pool.connect();
   try{
     await client.query("begin isolation level serializable");
-    const existing=await client.query<{id:string}>("select id from ledger_transactions where idempotency_key=$1",[input.idempotencyKey]);
+    const existing=await client.query<{id:string}>("select id from ledger_transactions where idempotency_key=$1",[effectiveIdempotencyKey]);
     if(existing.rowCount){
       const membership=await client.query<{id:string;ends_at:Date}>("select id,ends_at from fan_statuses where ledger_transaction_id=$1 limit 1",[existing.rows[0].id]);
       await client.query("commit");
@@ -27,7 +28,7 @@ export async function buyMegaFan(input:{fanUserId:string;creatorUserId:string;pr
     if(await getLedgerBalance(client,userAccount)<amount)throw new FanError("INSUFFICIENT_BALANCE","Saldo insuficiente.");
     const sink=await ensureSystemDiamondAccount(client);
     const ledger=await postLedgerTransaction(client,{
-      type:"mega_fan_purchase",referenceType:"fan_product",referenceId:product.rows[0].id,idempotencyKey:input.idempotencyKey,
+      type:"mega_fan_purchase",referenceType:"fan_product",referenceId:product.rows[0].id,idempotencyKey:effectiveIdempotencyKey,
       entries:[{accountId:userAccount,direction:"debit",amount},{accountId:sink,direction:"credit",amount}]
     });
     const current=await client.query<{end_at:Date}>(
