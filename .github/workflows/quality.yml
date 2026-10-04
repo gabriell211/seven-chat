@@ -65,6 +65,9 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npm run db:migrate
+      - name: Verify RLS security migration
+        run: |
+          test "$(psql "$DATABASE_URL" -Atc "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and not c.relrowsecurity")" = "0"
       - name: Verify schema snapshot is current
         run: |
           npm run db:generate
