@@ -7,6 +7,7 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { LEGAL_VERSION, PRIVACY_DOCUMENT, TERMS_DOCUMENT } from "@/lib/legal";
 import { oauthRegisterSchema, registerSchema } from "@/lib/validation";
 import { issueEmailVerification } from "@/services/auth-challenges";
+import { isAllowedRegistrationEmail } from "@/lib/email-policy";
 
 export async function POST(req:Request){
   const rate=await checkRateLimit(req,"auth");
@@ -44,6 +45,7 @@ export async function POST(req:Request){
     const parsed=registerSchema.safeParse(form);
     if(!parsed.success)return NextResponse.redirect(new URL("/register?error=validation",req.url),303);
     const v=parsed.data;
+    if(!isAllowedRegistrationEmail(v.email))return NextResponse.redirect(new URL("/register?error=disposable_email",req.url),303);
     const exists=await db.select({id:users.id}).from(users).where(or(eq(users.email,v.email),eq(users.username,v.username))).limit(1);
     if(exists.length)return NextResponse.redirect(new URL("/register?error=exists",req.url),303);
     const user=await db.transaction(async tx=>{
