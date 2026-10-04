@@ -551,3 +551,49 @@ export const storeActionJobs = pgTable("store_action_jobs", {
   uniqueIndex("store_action_unique_uq").on(t.provider, t.action, t.externalTransactionId),
   index("store_action_queue_idx").on(t.status, t.availableAt)
 ]);
+
+
+export const authChallenges = pgTable("auth_challenges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  purpose: text("purpose").notNull(),
+  tokenHash: text("token_hash").notNull(),
+  pendingValue: text("pending_value"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  uniqueIndex("auth_challenge_token_uq").on(t.tokenHash),
+  index("auth_challenge_user_purpose_idx").on(t.userId, t.purpose, t.expiresAt)
+]);
+
+export const dataExportRequests = pgTable("data_export_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("queued"),
+  objectKey: text("object_key"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  lastError: text("last_error")
+}, (t) => [index("data_export_user_requested_idx").on(t.userId, t.requestedAt)]);
+
+export const accountDeletionRequests = pgTable("account_deletion_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("scheduled"),
+  scheduledFor: timestamp("scheduled_for", { withTimezone: true }).notNull(),
+  requestedAt: timestamp("requested_at", { withTimezone: true }).notNull().defaultNow(),
+  canceledAt: timestamp("canceled_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true })
+}, (t) => [index("account_deletion_schedule_idx").on(t.status, t.scheduledFor)]);
+
+export const auditLogs = pgTable("audit_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  actorId: uuid("actor_id").references(() => users.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  targetType: text("target_type"),
+  targetId: uuid("target_id"),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("audit_logs_actor_created_idx").on(t.actorId, t.createdAt)]);
