@@ -84,7 +84,7 @@ async function uploadFile(key:string,path:string,contentType:string){
 
 async function sha256(path:string){
   const hash=createHash("sha256");
-  await pipeline(createReadStream(path),async function* (source){for await(const chunk of source){hash.update(chunk);yield chunk;}}(),async function* (source){for await(const _ of source){} }());
+  for await(const chunk of createReadStream(path))hash.update(chunk);
   return hash.digest("hex");
 }
 
