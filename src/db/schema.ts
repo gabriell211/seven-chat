@@ -111,12 +111,16 @@ export const messages = pgTable("messages", {
 
 export const ledgerAccounts = pgTable("ledger_accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
+  accountKey: text("account_key").notNull(),
   ownerId: uuid("owner_id").references(() => users.id, { onDelete: "cascade" }),
   ownerType: text("owner_type").notNull(),
   asset: text("asset").notNull().default("diamonds"),
   status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
-}, (t) => [uniqueIndex("ledger_owner_asset_uq").on(t.ownerType, t.ownerId, t.asset)]);
+}, (t) => [
+  uniqueIndex("ledger_account_key_uq").on(t.accountKey),
+  uniqueIndex("ledger_owner_asset_uq").on(t.ownerType, t.ownerId, t.asset)
+]);
 
 export const ledgerTransactions = pgTable("ledger_transactions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -422,3 +426,81 @@ export const messageReactions = pgTable("message_reactions", {
   reaction: text("reaction").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [primaryKey({ columns: [t.messageId, t.userId] })]);
+
+
+export const diamondPackages = pgTable("diamond_packages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sku: text("sku").notNull(),
+  diamonds: integer("diamonds").notNull(),
+  bonusDiamonds: integer("bonus_diamonds").notNull().default(0),
+  currency: text("currency").notNull(),
+  priceMinor: integer("price_minor").notNull(),
+  storeProductIds: jsonb("store_product_ids").notNull().default({}),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [uniqueIndex("diamond_packages_sku_uq").on(t.sku)]);
+
+export const vipPlans = pgTable("vip_plans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull(),
+  tier: text("tier").notNull(),
+  durationDays: integer("duration_days").notNull().default(30),
+  currency: text("currency").notNull(),
+  priceMinor: integer("price_minor").notNull(),
+  storeProductIds: jsonb("store_product_ids").notNull().default({}),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [uniqueIndex("vip_plans_code_uq").on(t.code)]);
+
+export const payments = pgTable("payments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  productType: text("product_type").notNull(),
+  sku: text("sku").notNull(),
+  externalTransactionId: text("external_transaction_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  currency: text("currency"),
+  amountMinor: integer("amount_minor"),
+  receiptHash: text("receipt_hash"),
+  rawMetadata: jsonb("raw_metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
+  refundedAt: timestamp("refunded_at", { withTimezone: true })
+}, (t) => [
+  uniqueIndex("payments_provider_external_uq").on(t.provider, t.externalTransactionId),
+  index("payments_user_created_idx").on(t.userId, t.createdAt)
+]);
+
+export const vipGifts = pgTable("vip_gifts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  senderId: uuid("sender_id").notNull().references(() => users.id),
+  receiverId: uuid("receiver_id").notNull().references(() => users.id),
+  planId: uuid("plan_id").notNull().references(() => vipPlans.id),
+  paymentId: uuid("payment_id").notNull().references(() => payments.id),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [index("vip_gifts_receiver_idx").on(t.receiverId, t.createdAt)]);
+
+export const rewardedAdClaims = pgTable("rewarded_ad_claims", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  externalEventId: text("external_event_id").notNull(),
+  rewardDiamonds: integer("reward_diamonds").notNull(),
+  ledgerTransactionId: uuid("ledger_transaction_id").notNull().references(() => ledgerTransactions.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [uniqueIndex("rewarded_ad_provider_event_uq").on(t.provider, t.externalEventId)]);
+
+export const webhookEvents = pgTable("webhook_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull(),
+  externalEventId: text("external_event_id").notNull(),
+  type: text("type").notNull(),
+  payloadHash: text("payload_hash").notNull(),
+  status: text("status").notNull().default("received"),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true }),
+  lastError: text("last_error")
+}, (t) => [uniqueIndex("webhook_provider_event_uq").on(t.provider, t.externalEventId)]);
