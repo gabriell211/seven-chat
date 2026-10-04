@@ -364,3 +364,42 @@ export const userConsents = pgTable("user_consents", {
   version: text("version").notNull(),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [primaryKey({ columns: [t.userId, t.document, t.version] })]);
+
+
+export const mediaAssets = pgTable("media_assets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  ownerId: uuid("owner_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  objectKey: text("object_key").notNull(),
+  purpose: text("purpose").notNull(),
+  status: text("status").notNull().default("pending_upload"),
+  declaredMime: text("declared_mime").notNull(),
+  detectedMime: text("detected_mime"),
+  sizeBytes: integer("size_bytes").notNull(),
+  checksumSha256: text("checksum_sha256"),
+  width: integer("width"),
+  height: integer("height"),
+  durationMs: integer("duration_ms"),
+  moderationStatus: text("moderation_status").notNull().default("pending"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  uniqueIndex("media_assets_object_key_uq").on(t.objectKey),
+  index("media_assets_owner_created_idx").on(t.ownerId, t.createdAt),
+  index("media_assets_status_created_idx").on(t.status, t.createdAt)
+]);
+
+export const mediaProcessingJobs = pgTable("media_processing_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  assetId: uuid("asset_id").notNull().references(() => mediaAssets.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0),
+  availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  index("media_jobs_queue_idx").on(t.status, t.availableAt)
+]);
