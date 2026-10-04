@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { createHash } from "node:crypto";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
@@ -39,4 +40,17 @@ export async function checkRateLimit(req:Request,policy:RatePolicy,subject?:stri
   if(result.success)return {ok:true};
   const retryAfter=Math.max(1,Math.ceil((result.reset-Date.now())/1000));
   return {ok:false,status:429,retryAfter};
+}
+
+export async function enforceRateLimit(req:Request,policy:RatePolicy,subject?:string){
+  const result=await checkRateLimit(req,policy,subject);
+  if(result.ok)return null;
+  if(result.status===503)return NextResponse.json(
+    {error:{code:"RATE_LIMIT_UNAVAILABLE",message:"Proteção contra abuso temporariamente indisponível."}},
+    {status:503}
+  );
+  return NextResponse.json(
+    {error:{code:"RATE_LIMITED",message:"Muitas tentativas. Tente novamente em instantes."}},
+    {status:429,headers:{"retry-after":String(result.retryAfter??60)}}
+  );
 }
