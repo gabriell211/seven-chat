@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  comments, liveSessions, messages, notifications, posts, reports, rooms, userRoles, users
+  comments, liveSessions, messages, moderationActions, notifications, posts, reports, rooms, userRoles, users
 } from "@/db/schema";
 import type { AdminRole } from "@/services/admin";
 
@@ -76,6 +76,11 @@ export async function executeModeration(input:{
     }
 
     await tx.update(reports).set({status:"resolved"}).where(eq(reports.id,report.id));
+    await tx.insert(moderationActions).values({
+      actorId:input.actorId,targetUserId,reportId:report.id,
+      action:input.action,reason:input.reason,
+      metadata:{targetType:report.targetType,targetId:report.targetId}
+    });
   });
   return {reportId:report.id,targetUserId,action:input.action};
 }
