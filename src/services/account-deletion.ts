@@ -36,7 +36,7 @@ export async function runNextAccountDeletion():Promise<{processed:boolean;reques
     await client.query("delete from live_guests where user_id=$1",[userId]);
     await client.query("update messages set body=null,media_url=null,media_asset_id=null,deleted_at=coalesce(deleted_at,now()) where sender_id=$1",[userId]);
     await client.query("update media_assets set status='deleted',updated_at=now() where owner_id=$1",[userId]);
-    await client.query("delete from data_export_requests where user_id=$1 and id<>$2",[userId,request.id]);
+    await client.query("delete from data_export_requests where user_id=$1",[userId]);
     await client.query("delete from purchase_intents where purchaser_user_id=$1 and status='created'",[userId]);
 
     const suffix=randomUUID().replaceAll("-","");
