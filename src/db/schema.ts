@@ -164,10 +164,13 @@ export const giftTransactions = pgTable("gift_transactions", {
   giftId: uuid("gift_id").notNull().references(() => gifts.id),
   ledgerTransactionId: uuid("ledger_transaction_id").notNull().references(() => ledgerTransactions.id),
   quantity: integer("quantity").notNull().default(1),
+  contextType: text("context_type"),
+  contextId: uuid("context_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [
   index("gift_tx_sender_idx").on(t.senderId, t.createdAt),
-  index("gift_tx_receiver_idx").on(t.receiverId, t.createdAt)
+  index("gift_tx_receiver_idx").on(t.receiverId, t.createdAt),
+  index("gift_tx_context_idx").on(t.contextType, t.contextId, t.createdAt)
 ]);
 
 export const reports = pgTable("reports", {
@@ -597,3 +600,50 @@ export const auditLogs = pgTable("audit_logs", {
   metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [index("audit_logs_actor_created_idx").on(t.actorId, t.createdAt)]);
+
+
+export const liveComments = pgTable("live_comments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  liveId: uuid("live_id").notNull().references(() => liveSessions.id, { onDelete: "cascade" }),
+  authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  pinned: boolean("pinned").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true })
+}, (t) => [
+  index("live_comments_live_created_idx").on(t.liveId, t.createdAt)
+]);
+
+export const liveModerators = pgTable("live_moderators", {
+  liveId: uuid("live_id").notNull().references(() => liveSessions.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.liveId, t.userId] })]);
+
+export const liveBans = pgTable("live_bans", {
+  liveId: uuid("live_id").notNull().references(() => liveSessions.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  actorId: uuid("actor_id").notNull().references(() => users.id),
+  reason: text("reason").notNull().default("moderation"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.liveId, t.userId] })]);
+
+export const liveBattles = pgTable("live_battles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  liveAId: uuid("live_a_id").notNull().references(() => liveSessions.id, { onDelete: "cascade" }),
+  liveBId: uuid("live_b_id").notNull().references(() => liveSessions.id, { onDelete: "cascade" }),
+  invitedBy: uuid("invited_by").notNull().references(() => users.id),
+  status: text("status").notNull().default("invited"),
+  durationSeconds: integer("duration_seconds").notNull().default(180),
+  multiplierBps: integer("multiplier_bps").notNull().default(10000),
+  scoreA: integer("score_a").notNull().default(0),
+  scoreB: integer("score_b").notNull().default(0),
+  startsAt: timestamp("starts_at", { withTimezone: true }),
+  endsAt: timestamp("ends_at", { withTimezone: true }),
+  winnerLiveId: uuid("winner_live_id").references(() => liveSessions.id),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  index("live_battles_status_ends_idx").on(t.status, t.endsAt),
+  index("live_battles_live_a_idx").on(t.liveAId, t.createdAt),
+  index("live_battles_live_b_idx").on(t.liveBId, t.createdAt)
+]);
