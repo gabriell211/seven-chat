@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Notifications(){return <AppShell><div className="card empty">Notificações in-app, push e preferências ficam aqui.</div></AppShell>}
