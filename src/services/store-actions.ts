@@ -58,3 +58,23 @@ export async function runStoreActionJob(id:string){
     return {processed:false};
   }
 }
+
+export async function runNextStoreActionJob(){
+  const [job]=await db.transaction(async tx=>{
+    const rows=await tx.execute<{id:string}>(`
+      update store_action_jobs
+      set status='running',locked_at=now(),updated_at=now()
+      where id=(
+        select id from store_action_jobs
+        where status='queued' and available_at<=now()
+        order by available_at asc
+        for update skip locked
+        limit 1
+      )
+      returning id
+    `);
+    return rows.rows;
+  });
+  if(!job)return {processed:false};
+  return {processed:true,result:await runStoreActionJob(job.id)};
+}
