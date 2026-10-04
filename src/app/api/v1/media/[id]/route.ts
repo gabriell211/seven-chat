@@ -14,5 +14,9 @@ export async function GET(req:Request,{params}:{params:Promise<{id:string}>}){
     }).from(mediaAssets).where(and(eq(mediaAssets.id,id),eq(mediaAssets.ownerId,session.userId))).limit(1);
     if(!asset)return NextResponse.json({error:{code:"NOT_FOUND",message:"Mídia não encontrada."}},{status:404});
     return NextResponse.json({data:asset});
-  }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
+  }catch(error){
+    const code=error instanceof Error?error.message:"MEDIA_STATUS_FAILED";
+    if(code==="UNAUTHORIZED")return NextResponse.json({error:{code,message:"Faça login."}},{status:401});
+    return NextResponse.json({error:{code:"MEDIA_STATUS_FAILED",message:"Não foi possível consultar a mídia."}},{status:500});
+  }
 }
