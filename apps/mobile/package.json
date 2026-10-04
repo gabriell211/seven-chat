@@ -16,8 +16,7 @@
     "expo-secure-store": "57.0.4",
     "react": "19.2.3",
     "react-native": "0.86.3",
-    "expo-image-picker": "57.0.20",
-    "ws": "8.18.3"
+    "expo-image-picker": "57.0.20"
   },
   "devDependencies": {
     "@types/react": "^19.2.2",
