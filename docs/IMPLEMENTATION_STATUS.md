@@ -1,21 +1,47 @@
 # Implementation status
 
-This branch rebuilds the executable Seven Chat application while production remains untouched.
+This branch rebuilds the executable Seven Chat platform while the current production deployment remains untouched.
 
-## Implemented in this branch
+## Implemented and CI-validated
 
-- Next.js 16 / React 19 foundation
-- PostgreSQL schema with social, chat, ledger, gifts and moderation core
-- HttpOnly signed sessions and password hashing
-- 13–99 registration rule
-- Feed and post creation
-- Chat persistence foundation
-- Profile and discovery shell
-- Diamond ledger read model
-- Transactional/idempotent gift sending
-- Report endpoint
-- Security headers and responsive navigation
+- Next.js 16 / React 19 web application.
+- Expo 57 / React Native 0.86 mobile client for Android and iOS source.
+- Separate Next.js administrative application with RBAC.
+- Persistent WebSocket realtime gateway with authenticated channel subscriptions and PostgreSQL LISTEN/NOTIFY fan-out.
+- Durable worker for private media processing, store retries, privacy jobs and timed live-battle completion.
+- PostgreSQL/Drizzle migrations validated from an empty PostgreSQL 17 database.
+- Revocable per-device native sessions and HttpOnly web sessions.
+- Registration age rule (13–99), versioned legal consent, disposable-email rejection, e-mail verification and password reset.
+- Feed, posts, comments, reactions, saved posts, search, follow/block and notifications.
+- Direct/group conversations, persisted messages, typing/realtime refresh, media messages, VIP video gating and server-controlled view-once.
+- Private S3-compatible upload authorization, magic-byte inspection, malware gate, metadata stripping, image normalization, video/audio transcode and signed reads.
+- Stories with 24-hour expiry and reels backed by processed private assets.
+- Voice rooms with VIP gating, password/invite modes, hand raising, stage roles, moderation and bans.
+- Live sessions, up to four guests, live comments, moderators/bans, gifts and timed gift-scored battles.
+- LiveKit token issuance for rooms/lives/calls.
+- Double-entry Diamond ledger, idempotent gifts, Mega Fan, rewarded-ad claims and authoritative wallet balance.
+- Apple App Store and Google Play server-side purchase verification, purchase intents, VIP gifting and durable Google consume/acknowledge retries.
+- Account data export, deletion scheduling/cancellation and privacy worker.
+- Admin moderation hierarchy and executable warn/restrict/suspend/ban/remove-content actions.
+- Production rate-limit fail-closed behavior for auth/write/financial/report policies.
+- Security headers, validation tests and multi-application CI.
 
-## Release gates still open
+## External infrastructure gates still open
 
-The branch must not be called 1.0 until its README completion contract is satisfied, including RTC, realtime gateway, storage processing, payments/IAP, mobile builds, admin/moderation, E2E, load testing and recovery validation.
+The branch must not be called **1.0 production-ready** until these environment-dependent gates are proven:
+
+- A staging environment isolated from production with its own database, private object storage, Redis/rate-limit, LiveKit/TURN, realtime and worker deployments.
+- Real Apple/Google sandbox purchase fixtures and refund/revocation webhook exercises.
+- Real AdMob server-side verification fixture.
+- Native Android/iOS signed builds, device smoke tests, background/push notification validation and store compliance checks.
+- E2E browser/device suites against staging, plus concurrency/load tests for chat, gifts, rooms and live battles.
+- Backup/PITR restore drill with measured RPO/RTO and documented rollback.
+- Production observability/alert routing with SLO dashboards.
+- Final accessibility audit, privacy/legal review and operational runbooks.
+
+## Current infrastructure blockers observed
+
+- The connected Railway account is authenticated, but its trial is expired and Railway requires selecting a paid plan before a staging project can be created.
+- A Neon Marketplace installation is visible in Vercel, but the current connector scope returned 401 for the provisioning/product endpoint, so no staging Neon resource was created through that path.
+
+No production database, deployment or paid infrastructure was modified while building this branch.
