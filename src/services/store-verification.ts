@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { diamondPackages, purchaseIntents, vipPlans } from "@/db/schema";
 import { fulfillVerifiedPurchase } from "@/services/payments";
 import { finalizeGooglePurchase } from "@/services/store-actions";
+import { ensureStoreTokenEncryptionConfigured } from "@/lib/secrets";
 
 export class StoreVerificationError extends Error{constructor(public readonly code:string,message:string){super(message);}}
 
@@ -78,6 +79,7 @@ type SubscriptionPurchaseV2={
 };
 
 export async function verifyAndFulfillGoogle(input:{purchaserUserId:string;intentId:string;purchaseToken:string}){
+  ensureStoreTokenEncryptionConfigured();
   const {intent,storeProductId}=await loadIntent(input.intentId,input.purchaserUserId,"google");
   const packageName=process.env.GOOGLE_PLAY_PACKAGE_NAME;
   if(!packageName)throw new StoreVerificationError("GOOGLE_PLAY_NOT_CONFIGURED","GOOGLE_PLAY_PACKAGE_NAME ausente.");
