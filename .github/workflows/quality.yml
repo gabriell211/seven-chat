@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   web:
@@ -39,6 +39,37 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/seven_chat
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: seven_chat
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d seven_chat"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run db:migrate
+      - name: Verify schema snapshot is current
+        run: |
+          npm run db:generate
+          git diff --exit-code -- drizzle
+
   mobile:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -52,7 +83,6 @@ jobs:
           node-version: 24
       - run: npm install
       - run: npm run typecheck
-
 
   admin:
     runs-on: ubuntu-latest
@@ -69,33 +99,17 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
 
-
-  migration_snapshot:
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+  realtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/seven_chat
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/realtime
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: npm install
-      - run: rm -rf drizzle && npm run db:generate
-      - name: Commit generated migration snapshot
-        run: |
-          git config user.name "seven-chat-ci"
-          git config user.email "actions@users.noreply.github.com"
-          git add drizzle
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: version generated database migration"
-            git push origin HEAD:${{ github.event.pull_request.head.ref }}
-          fi
-      - uses: actions/upload-artifact@v4
-        with:
-          name: drizzle-migrations
-          path: drizzle
-          if-no-files-found: error
+      - run: npm run typecheck
+      - run: npm run build
