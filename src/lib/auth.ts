@@ -37,3 +37,21 @@ export async function requireSession(): Promise<Session> {
   if (!session) throw new Error("UNAUTHORIZED");
   return session;
 }
+
+const OAUTH_PENDING_COOKIE = "seven_oauth_pending";
+export type OAuthPending = { provider:"google"; subject:string; email:string; name:string };
+
+export async function createOAuthPending(data:OAuthPending):Promise<void>{
+  const token=await new SignJWT(data).setProtectedHeader({alg:"HS256"}).setIssuedAt().setExpirationTime("10m").sign(secret);
+  (await cookies()).set(OAUTH_PENDING_COOKIE,token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:600});
+}
+export async function getOAuthPending():Promise<OAuthPending|null>{
+  const token=(await cookies()).get(OAUTH_PENDING_COOKIE)?.value;
+  if(!token)return null;
+  try{
+    const {payload}=await jwtVerify(token,secret);
+    if(payload.provider!=="google"||typeof payload.subject!=="string"||typeof payload.email!=="string"||typeof payload.name!=="string")return null;
+    return {provider:"google",subject:payload.subject,email:payload.email,name:payload.name};
+  }catch{return null;}
+}
+export async function clearOAuthPending():Promise<void>{(await cookies()).delete(OAUTH_PENDING_COOKIE);}
