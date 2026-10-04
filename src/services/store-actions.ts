@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { GoogleAuth } from "google-auth-library";
-import { db } from "@/lib/db";
+import { db, pool } from "@/lib/db";
 import { storeActionJobs } from "@/db/schema";
 import { decryptStoreToken, encryptStoreToken } from "@/lib/secrets";
 
@@ -60,8 +60,11 @@ export async function runStoreActionJob(id:string){
 }
 
 export async function runNextStoreActionJob(){
-  const [job]=await db.transaction(async tx=>{
-    const rows=await tx.execute<{id:string}>(`
+  const client=await pool.connect();
+  let id:string|undefined;
+  try{
+    await client.query("begin");
+    const claimed=await client.query<{id:string}>(`
       update store_action_jobs
       set status='running',locked_at=now(),updated_at=now()
       where id=(
@@ -73,8 +76,14 @@ export async function runNextStoreActionJob(){
       )
       returning id
     `);
-    return rows.rows;
-  });
-  if(!job)return {processed:false};
-  return {processed:true,result:await runStoreActionJob(job.id)};
+    id=claimed.rows[0]?.id;
+    await client.query("commit");
+  }catch(error){
+    await client.query("rollback");
+    throw error;
+  }finally{
+    client.release();
+  }
+  if(!id)return {processed:false};
+  return {processed:true,result:await runStoreActionJob(id)};
 }
