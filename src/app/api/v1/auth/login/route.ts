@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { users } from "@/db/schema";
 import { createDeviceSession, verifyPassword } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const schema=z.object({
   identifier:z.string().min(3).max(254),
@@ -13,6 +14,7 @@ const schema=z.object({
 });
 
 export async function POST(req:Request){
+  const limited=await enforceRateLimit(req,"auth"); if(limited)return limited;
   const parsed=schema.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Dados inválidos."}},{status:422});
   const ident=parsed.data.identifier.trim().toLowerCase().replace(/^@/,"");
