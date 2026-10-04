@@ -17,8 +17,9 @@ export async function GET(req:Request){
     }
     return NextResponse.json({data:{id:row.id,status:row.status,requestedAt:row.requestedAt,completedAt:row.completedAt,expiresAt:row.expiresAt,download}});
   }catch(error){
-    const code=error instanceof Error?error.message:"UNAUTHORIZED";
-    return NextResponse.json({error:{code,message:code==="STORAGE_NOT_CONFIGURED"?"Storage não configurado.":"Faça login."}},{status:code==="STORAGE_NOT_CONFIGURED"?503:401});
+    const code=error instanceof Error?error.message:"EXPORT_FAILED";
+    const status=code==="UNAUTHORIZED"?401:code==="STORAGE_NOT_CONFIGURED"?503:500;
+    return NextResponse.json({error:{code:status===500?"EXPORT_FAILED":code,message:code==="STORAGE_NOT_CONFIGURED"?"Storage não configurado.":status===401?"Faça login.":"Não foi possível consultar a exportação."}},{status});
   }
 }
 export async function POST(req:Request){
@@ -29,5 +30,9 @@ export async function POST(req:Request){
     if(existing[0]&&["queued","processing"].includes(existing[0].status))return NextResponse.json({data:existing[0]},{status:202});
     const [row]=await db.insert(dataExportRequests).values({userId:session.userId}).returning({id:dataExportRequests.id,status:dataExportRequests.status,requestedAt:dataExportRequests.requestedAt});
     return NextResponse.json({data:row},{status:202});
-  }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
+  }catch(error){
+    const code=error instanceof Error?error.message:"EXPORT_REQUEST_FAILED";
+    if(code==="UNAUTHORIZED")return NextResponse.json({error:{code,message:"Faça login."}},{status:401});
+    return NextResponse.json({error:{code:"EXPORT_REQUEST_FAILED",message:"Não foi possível solicitar a exportação."}},{status:500});
+  }
 }
