@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { GiftError, sendGift } from "@/services/gifts";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { publishRealtimeBestEffort } from "@/lib/realtime";
 const schema=z.object({receiverId:z.uuid(),giftId:z.uuid(),quantity:z.number().int().min(1).max(100).default(1),idempotencyKey:z.string().min(16).max(128)});
 export async function POST(req:Request){
   try{
@@ -11,6 +12,10 @@ export async function POST(req:Request){
     const parsed=schema.safeParse(await req.json());
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Dados do gift inválidos."}},{status:422});
     const result=await sendGift({senderId:session.userId,...parsed.data});
+    await publishRealtimeBestEffort({
+      channel:"user:"+parsed.data.receiverId,event:"gift.received",
+      data:{giftTransactionId:result.giftTransactionId,senderId:session.userId,giftId:parsed.data.giftId,quantity:parsed.data.quantity}
+    });
     return NextResponse.json({data:result},{status:201});
   }catch(error){
     if(error instanceof GiftError){
