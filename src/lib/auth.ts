@@ -119,6 +119,12 @@ export async function requireRequestSession(req:Request):Promise<Session>{
   return session;
 }
 
+export async function createRealtimeAccessToken(session:Session):Promise<string>{
+  return new SignJWT({
+    userId:session.userId,username:session.username,sessionId:session.sessionId,scope:"realtime"
+  }).setProtectedHeader({alg:"HS256"}).setIssuedAt().setExpirationTime("5m").sign(getSecret());
+}
+
 export async function revokeDeviceSession(userId:string,sessionId:string):Promise<boolean>{
   const rows=await db.update(userSessions).set({revokedAt:new Date()})
     .where(and(eq(userSessions.id,sessionId),eq(userSessions.userId,userId))).returning({id:userSessions.id});
