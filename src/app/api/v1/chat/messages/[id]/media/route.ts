@@ -27,6 +27,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     return NextResponse.json({data:{url:await createDownloadUrl(row.objectKey,expiresIn),expiresIn,viewOnce:row.viewOnce}});
   }catch(error){
     const code=error instanceof Error?error.message:"MEDIA_FAILED";
-    return NextResponse.json({error:{code,message:"Não foi possível abrir a mídia."}},{status:code==="STORAGE_NOT_CONFIGURED"?503:401});
+    const status=code==="UNAUTHORIZED"?401:code==="STORAGE_NOT_CONFIGURED"?503:500;
+    return NextResponse.json({error:{code:status===500?"MEDIA_FAILED":code,message:"Não foi possível abrir a mídia."}},{status});
   }
 }
