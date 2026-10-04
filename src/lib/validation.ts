@@ -27,3 +27,14 @@ export const reportSchema = z.object({
   reason: z.enum(["spam","harassment","hate","sexual","violence","fraud","impersonation","other"]),
   details: z.string().max(2000).optional()
 });
+export const oauthRegisterSchema = z.object({
+  username: z.string().min(3).max(24).regex(/^[a-zA-Z0-9_.]+$/).transform((v) => v.toLowerCase()),
+  displayName: z.string().min(2).max(60),
+  birthDate: z.coerce.date()
+}).superRefine((data, ctx) => {
+  const now = new Date();
+  let age = now.getUTCFullYear() - data.birthDate.getUTCFullYear();
+  const birthday = new Date(Date.UTC(now.getUTCFullYear(), data.birthDate.getUTCMonth(), data.birthDate.getUTCDate()));
+  if (now < birthday) age -= 1;
+  if (age < 13 || age > 99) ctx.addIssue({ code: "custom", path: ["birthDate"], message: "Idade deve estar entre 13 e 99 anos." });
+});
