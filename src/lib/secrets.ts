@@ -1,5 +1,7 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 
+export function ensureStoreTokenEncryptionConfigured():void{ key(); }
+
 function key():Buffer{
   const raw=process.env.STORE_TOKEN_KEY_BASE64;
   if(!raw)throw new Error("STORE_TOKEN_KEY_MISSING");
