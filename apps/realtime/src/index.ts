@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { randomUUID } from "node:crypto";
 import { TextEncoder } from "node:util";
 import pg from "pg";
 import { jwtVerify } from "jose";
@@ -15,12 +16,14 @@ const secret=new TextEncoder().encode(SESSION_SECRET);
 const ssl=process.env.NODE_ENV==="production"?{rejectUnauthorized:false}:undefined;
 const pool=new Pool({connectionString:DATABASE_URL,max:10,ssl});
 const allowedOrigins=new Set((process.env.ALLOWED_ORIGINS??"").split(",").map(v=>v.trim()).filter(Boolean));
+if(process.env.NODE_ENV==="production"&&allowedOrigins.size===0)throw new Error("ALLOWED_ORIGINS_MISSING");
 
 type ClientMeta={
   userId:string;sessionId:string;subscriptions:Set<string>;alive:boolean;
   windowStartedAt:number;eventsInWindow:number;
 };
 const clients=new Map<WebSocket,ClientMeta>();
+const identities=new WeakMap<WebSocket,{userId:string;sessionId:string}>();
 const wss=new WebSocketServer({noServer:true,maxPayload:16*1024});
 
 const command=z.discriminatedUnion("type",[
@@ -81,7 +84,7 @@ async function canSubscribe(userId:string,channel:string){
   return false;
 }
 async function publish(channel:string,event:string,data:Record<string,unknown>){
-  const payload=JSON.stringify({id:crypto.randomUUID(),channel,event,data,createdAt:new Date().toISOString()});
+  const payload=JSON.stringify({id:randomUUID(),channel,event,data,createdAt:new Date().toISOString()});
   if(Buffer.byteLength(payload)>7500)return;
   await pool.query("select pg_notify('seven_events',$1)",[payload]);
 }
@@ -100,7 +103,10 @@ function broadcast(raw:string){
   }
 }
 
-wss.on("connection",(ws,_request,identity:{userId:string;sessionId:string})=>{
+wss.on("connection",(ws)=>{
+  const identity=identities.get(ws);
+  if(!identity){ws.close(1008,"identity missing");return;}
+  identities.delete(ws);
   const meta:ClientMeta={...identity,subscriptions:new Set([`user:${identity.userId}`]),alive:true,windowStartedAt:Date.now(),eventsInWindow:0};
   clients.set(ws,meta);
   send(ws,{type:"ready",userId:identity.userId,heartbeatSeconds:30});
@@ -142,9 +148,10 @@ server.on("upgrade",async(req,socket,head)=>{
     if(!validOrigin(req.headers.origin)){socket.write("HTTP/1.1 403 Forbidden\r\n\r\n");socket.destroy();return;}
     const url=new URL(req.url??"/","http://localhost");
     if(url.pathname!=="/ws"){socket.destroy();return;}
-    const token=url.searchParams.get("token");if(!token)throw new Error("TOKEN_MISSING");
-    const identity=await authenticate(token);
-    wss.handleUpgrade(req,socket,head,ws=>wss.emit("connection",ws,req,identity));
+    const protocols=(req.headers["sec-websocket-protocol"]??"").split(",").map(v=>v.trim()).filter(Boolean);
+    if(protocols[0]!=="seven-chat"||!protocols[1])throw new Error("TOKEN_MISSING");
+    const identity=await authenticate(protocols[1]);
+    wss.handleUpgrade(req,socket,head,ws=>{identities.set(ws,identity);wss.emit("connection",ws,req);});
   }catch{socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");socket.destroy();}
 });
 
