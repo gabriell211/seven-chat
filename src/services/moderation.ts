@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   comments, liveSessions, messages, notifications, posts, reports, rooms, userRoles, users
