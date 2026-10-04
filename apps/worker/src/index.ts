@@ -21,6 +21,8 @@ const S3_REGION=process.env.S3_REGION??"auto";
 const CLAMAV_HOST=process.env.CLAMAV_HOST;
 const CLAMAV_PORT=Number(process.env.CLAMAV_PORT??3310);
 const POLL_MS=Number(process.env.WORKER_POLL_MS??1500);
+const SEVEN_API_URL=process.env.SEVEN_API_URL?.replace(/\/$/,"");
+const CRON_SECRET=process.env.CRON_SECRET;
 
 const pool=new Pool({
   connectionString:DATABASE_URL,max:4,
@@ -229,6 +231,28 @@ async function processAsset(asset:Asset){
   }finally{await rm(dir,{recursive:true,force:true});}
 }
 
+async function callInternalJob(path:string){
+  if(!SEVEN_API_URL||!CRON_SECRET){
+    if(process.env.NODE_ENV==="production")throw new Error("INTERNAL_JOB_CONFIG_MISSING");
+    return;
+  }
+  const response=await fetch(SEVEN_API_URL+path,{
+    method:"POST",headers:{authorization:"Bearer "+CRON_SECRET},
+    signal:AbortSignal.timeout(20_000)
+  });
+  if(!response.ok)throw new Error("INTERNAL_JOB_HTTP_"+response.status);
+}
+
+async function internalJobsLoop(){
+  while(!stopping){
+    try{
+      await callInternalJob("/api/internal/jobs/store-actions");
+      await callInternalJob("/api/internal/jobs/privacy");
+    }catch(error){console.error("internal job loop error",safeError(error));}
+    await sleep(5000);
+  }
+}
+
 let stopping=false;
 async function loop(){
   while(!stopping){
@@ -247,3 +271,4 @@ async function shutdown(){
 process.on("SIGTERM",()=>void shutdown());
 process.on("SIGINT",()=>void shutdown());
 void loop();
+void internalJobsLoop();
