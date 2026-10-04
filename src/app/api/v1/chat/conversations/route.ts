@@ -5,6 +5,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, pool } from "@/lib/db";
 import { conversationMembers, conversations } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { areUsersBlocked } from "@/services/social-guard";
 import { hasVipAtLeast } from "@/services/entitlements";
 
@@ -18,6 +19,7 @@ const schema=z.object({
 export async function GET(req:Request){
   try{
     const session=await requireRequestSession(req);
+    const limited=await enforceRateLimit(req,"write",session.userId);if(limited)return limited;
     const data=await db.select({id:conversations.id,type:conversations.type,title:conversations.title,isPrivate:conversations.isPrivate,createdAt:conversations.createdAt,role:conversationMembers.role})
       .from(conversationMembers).innerJoin(conversations,eq(conversationMembers.conversationId,conversations.id))
       .where(eq(conversationMembers.userId,session.userId)).orderBy(desc(conversations.createdAt)).limit(100);
