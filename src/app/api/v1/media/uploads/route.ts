@@ -27,6 +27,7 @@ export async function POST(req:Request){
     return NextResponse.json({data:{assetId:asset.id,uploadUrl,expiresIn:300,requiredHeaders:{"content-type":parsed.data.mime}}},{status:201});
   }catch(error){
     const code=error instanceof Error?error.message:"UPLOAD_FAILED";
-    return NextResponse.json({error:{code,message:code==="STORAGE_NOT_CONFIGURED"?"Storage privado não configurado.":"Não foi possível autorizar o upload."}},{status:code==="STORAGE_NOT_CONFIGURED"?503:401});
+    const status=code==="UNAUTHORIZED"?401:code==="STORAGE_NOT_CONFIGURED"?503:500;
+    return NextResponse.json({error:{code:status===500?"UPLOAD_FAILED":code,message:code==="STORAGE_NOT_CONFIGURED"?"Storage privado não configurado.":"Não foi possível autorizar o upload."}},{status});
   }
 }
