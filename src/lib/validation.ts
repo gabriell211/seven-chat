@@ -15,12 +15,16 @@ export const registerSchema = z.object({
 });
 export const loginSchema = z.object({ identifier: z.string().min(3).max(254), password: z.string().min(1).max(128) });
 export const postSchema = z.object({ body: z.string().trim().min(1).max(4000), visibility: z.enum(["public","followers","private"]).default("public") });
+const formBoolean = z.union([z.boolean(),z.literal("true"),z.literal("false"),z.literal("1"),z.literal("0")])
+  .transform((v)=>v===true||v==="true"||v==="1");
+
 export const messageSchema = z.object({
   body: z.string().trim().max(8000).optional(),
   type: z.enum(["text","image","video","audio","file"]).default("text"),
-  mediaUrl: z.url().optional(),
-  viewOnce: z.coerce.boolean().default(false)
-}).refine((v) => Boolean(v.body || v.mediaUrl), { message: "Mensagem vazia." });
+  mediaAssetId: z.uuid().optional(),
+  viewOnce: formBoolean.default(false)
+}).refine((v) => Boolean(v.body || v.mediaAssetId), { message: "Mensagem vazia." })
+  .refine((v)=>!v.viewOnce||["image","video"].includes(v.type),{message:"Visualização única só é permitida para foto ou vídeo."});
 export const reportSchema = z.object({
   targetType: z.enum(["user","post","comment","message","live","room"]),
   targetId: z.uuid(),
