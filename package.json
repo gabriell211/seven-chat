@@ -34,7 +34,8 @@
     "@upstash/redis": "1.39.0",
     "livekit-client": "2.22.3",
     "@livekit/components-react": "2.9.24",
-    "@livekit/components-styles": "1.2.0"
+    "@livekit/components-styles": "1.2.0",
+    "disposable-email-domains-js": "1.26.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
