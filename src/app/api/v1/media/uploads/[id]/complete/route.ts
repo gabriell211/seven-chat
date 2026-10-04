@@ -25,6 +25,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     return NextResponse.json({data:{id,status:"processing"}});
   }catch(error){
     const code=error instanceof Error?error.message:"UPLOAD_FINALIZE_FAILED";
-    return NextResponse.json({error:{code,message:"Não foi possível finalizar o upload."}},{status:code==="STORAGE_NOT_CONFIGURED"?503:401});
+    const status=code==="UNAUTHORIZED"?401:code==="STORAGE_NOT_CONFIGURED"?503:500;
+    return NextResponse.json({error:{code:status===500?"UPLOAD_FINALIZE_FAILED":code,message:"Não foi possível finalizar o upload."}},{status});
   }
 }
