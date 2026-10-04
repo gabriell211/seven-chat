@@ -320,3 +320,23 @@ export const oauthAccounts = pgTable("oauth_accounts", {
   primaryKey({ columns: [t.provider, t.providerAccountId] }),
   uniqueIndex("oauth_provider_user_uq").on(t.provider, t.userId)
 ]);
+
+
+export const userRoles = pgTable("user_roles", {
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  role: text("role").notNull(),
+  grantedAt: timestamp("granted_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.userId, t.role] })]);
+
+export const postReactions = pgTable("post_reactions", {
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  reaction: text("reaction").notNull().default("like"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.postId, t.userId] })]);
+
+export const savedPosts = pgTable("saved_posts", {
+  postId: uuid("post_id").notNull().references(() => posts.id, { onDelete: "cascade" }),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.postId, t.userId] })]);
