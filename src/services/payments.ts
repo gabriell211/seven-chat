@@ -20,6 +20,20 @@ export async function fulfillVerifiedPurchase(p:VerifiedStorePurchase){
   const client=await pool.connect();
   try{
     await client.query("begin isolation level serializable");
+    if(p.purchaseIntentId){
+      const intent=await client.query<{
+        purchaser_user_id:string;beneficiary_user_id:string;provider:string;product_type:string;sku:string;status:string;expires_at:Date;
+      }>(
+        "select purchaser_user_id,beneficiary_user_id,provider,product_type,sku,status,expires_at from purchase_intents where id=$1 for update",
+        [p.purchaseIntentId]
+      );
+      const row=intent.rows[0];
+      if(!row||row.status!=="created"||new Date(row.expires_at)<=new Date()||
+        row.purchaser_user_id!==p.purchaserUserId||row.beneficiary_user_id!==(p.beneficiaryUserId??p.purchaserUserId)||
+        row.provider!==p.provider){
+        throw new PaymentError("PURCHASE_INTENT_INVALID","Intenção de compra inválida, expirada ou já consumida.");
+      }
+    }
     const existing=await client.query<{id:string;status:string}>(
       "select id,status from payments where provider=$1 and external_transaction_id=$2 for update",
       [p.provider,p.externalTransactionId]
@@ -78,6 +92,9 @@ export async function fulfillVerifiedPurchase(p:VerifiedStorePurchase){
       }
     }
 
+    if(p.purchaseIntentId){
+      await client.query("update purchase_intents set status='consumed',consumed_at=now() where id=$1",[p.purchaseIntentId]);
+    }
     await client.query("commit");
     return {paymentId,duplicate:false,productType:item.kind,sku:item.sku};
   }catch(error){
