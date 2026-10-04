@@ -185,6 +185,7 @@ export const stories = pgTable("stories", {
   type: text("type").notNull(),
   textContent: text("text_content"),
   mediaUrl: text("media_url"),
+  mediaAssetId: uuid("media_asset_id"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [index("stories_author_created_idx").on(t.authorId, t.createdAt), index("stories_expires_idx").on(t.expiresAt)]);
@@ -199,8 +200,10 @@ export const reels = pgTable("reels", {
   id: uuid("id").primaryKey().defaultRandom(),
   authorId: uuid("author_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   caption: text("caption").notNull().default(""),
-  videoUrl: text("video_url").notNull(),
+  videoUrl: text("video_url").notNull().default(""),
+  mediaAssetId: uuid("media_asset_id"),
   thumbnailUrl: text("thumbnail_url"),
+  thumbnailAssetId: uuid("thumbnail_asset_id"),
   durationMs: integer("duration_ms").notNull(),
   visibility: postVisibility("visibility").notNull().default("public"),
   viewCount: integer("view_count").notNull().default(0),
