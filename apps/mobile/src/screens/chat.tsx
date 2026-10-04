@@ -1,16 +1,25 @@
-import React,{useState} from "react";
+import React,{useEffect,useState} from "react";
 import {FlatList,Pressable,StyleSheet,Text,TextInput,View} from "react-native";
 import {useMutation,useQuery,useQueryClient} from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import {api} from "../api";
 import {uploadMedia} from "../media";
 import {theme} from "../theme";
+import {SevenRealtime} from "../realtime";
 import type {Conversations,Messages} from "../types";
 
 export function ChatScreen({myId}:{myId:string}){
   const [selected,setSelected]=useState<string|null>(null),[body,setBody]=useState(""),[asset,setAsset]=useState<ImagePicker.ImagePickerAsset|null>(null),[viewOnce,setViewOnce]=useState(false),qc=useQueryClient();
   const conversations=useQuery({queryKey:["conversations"],queryFn:()=>api<Conversations>("/api/v1/chat/conversations")});
   const messages=useQuery({queryKey:["messages",selected],queryFn:()=>api<Messages>("/api/v1/chat/conversations/"+selected+"/messages"),enabled:Boolean(selected)});
+  useEffect(()=>{
+    if(!selected)return;
+    const realtime=new SevenRealtime();
+    realtime.subscribe("conversation:"+selected);
+    const off=realtime.on(event=>{if(event.channel==="conversation:"+selected)void qc.invalidateQueries({queryKey:["messages",selected]});});
+    void realtime.start();
+    return()=>{off();realtime.stop();};
+  },[selected,qc]);
   const send=useMutation({
     mutationFn:async()=>{
       let mediaAssetId:string|undefined;
