@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Explore(){return <AppShell><div className="card"><h2>Explorar</h2><p className="muted">Descoberta por interesses, gênero configurado, idade, região, idioma e presença, respeitando privacidade e bloqueios.</p></div></AppShell>}
