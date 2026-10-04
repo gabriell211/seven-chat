@@ -37,8 +37,14 @@ async function signSession(payload:Session,ttl:string="30d"):Promise<string>{
   return new SignJWT(payload).setProtectedHeader({alg:"HS256"}).setIssuedAt().setExpirationTime(ttl).sign(getSecret());
 }
 
-export async function createSession(session:Omit<Session,"sessionId">):Promise<void>{
-  const token=await signSession(session);
+export async function createSession(session:Omit<Session,"sessionId">,meta?:{deviceName?:string;userAgent?:string|null}):Promise<void>{
+  const sessionId=randomUUID();
+  const expiresAt=new Date(Date.now()+30*24*60*60*1000);
+  await db.insert(userSessions).values({
+    id:sessionId,userId:session.userId,deviceName:meta?.deviceName??"Navegador web",
+    platform:"web",userAgent:meta?.userAgent??null,expiresAt
+  });
+  const token=await signSession({...session,sessionId});
   (await cookies()).set(COOKIE_NAME,token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"lax",path:"/",maxAge:2592000});
 }
 
@@ -54,7 +60,15 @@ export async function createDeviceSession(input:{
   return {accessToken:await signSession({userId:input.userId,username:input.username,sessionId}),sessionId,expiresAt};
 }
 
-export async function clearSession():Promise<void>{(await cookies()).delete(COOKIE_NAME);}
+export async function clearSession():Promise<void>{
+  const store=await cookies();
+  const token=store.get(COOKIE_NAME)?.value;
+  if(token){
+    const session=await decodeSession(token);
+    if(session?.sessionId)await revokeDeviceSession(session.userId,session.sessionId);
+  }
+  store.delete(COOKIE_NAME);
+}
 
 async function decodeSession(token:string):Promise<Session|null>{
   try{
