@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { comments, notifications, posts, profiles, users } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 const schema=z.object({body:z.string().trim().min(1).max(2000),parentId:z.uuid().optional()});
 
 export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){
@@ -15,7 +16,9 @@ export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){
 }
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   try{
-    const session=await requireRequestSession(req),{id}=await params,parsed=schema.safeParse(await req.json().catch(()=>null));
+    const session=await requireRequestSession(req),{id}=await params;
+    const limited=await enforceRateLimit(req,"write",session.userId);if(limited)return limited;
+    const parsed=schema.safeParse(await req.json().catch(()=>null));
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Comentário inválido."}},{status:422});
     const [post]=await db.select({authorId:posts.authorId,commentsEnabled:posts.commentsEnabled}).from(posts).where(eq(posts.id,id)).limit(1);
     if(!post)return NextResponse.json({error:{code:"NOT_FOUND",message:"Post não encontrado."}},{status:404});
