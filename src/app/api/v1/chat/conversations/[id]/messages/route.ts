@@ -6,6 +6,7 @@ import { requireRequestSession } from "@/lib/auth";
 import { messageSchema } from "@/lib/validation";
 import { hasVipAtLeast } from "@/services/entitlements";
 import { areUsersBlocked } from "@/services/social-guard";
+import { publishRealtimeBestEffort } from "@/lib/realtime";
 
 async function membership(conversationId:string,userId:string){
   const [row]=await db.select({type:conversations.type}).from(conversationMembers)
@@ -55,6 +56,10 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
       conversationId:id,senderId:session.userId,type:parsed.data.type,body:parsed.data.body??null,
       mediaAssetId:parsed.data.mediaAssetId??null,viewOnce:parsed.data.viewOnce
     }).returning({id:messages.id,createdAt:messages.createdAt});
+    await publishRealtimeBestEffort({
+      channel:"conversation:"+id,event:"message.created",
+      data:{id:message.id,conversationId:id,senderId:session.userId,type:parsed.data.type,createdAt:message.createdAt.toISOString()}
+    });
     return NextResponse.json({data:message},{status:201});
   }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
 }
