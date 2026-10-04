@@ -64,11 +64,17 @@ async function canSubscribe(userId:string,channel:string){
     return Boolean(r.rowCount);
   }
   if(parsed.kind==="room"){
-    const r=await pool.query(`select 1 from room_members rm join rooms r on r.id=rm.room_id where rm.room_id=$1 and rm.user_id=$2 and r.status='active' limit 1`,[parsed.id,userId]);
+    const r=await pool.query(`select 1 from room_members rm join rooms r on r.id=rm.room_id where rm.room_id=$1 and rm.user_id=$2 and rm.role<>'banned' and r.status='active' limit 1`,[parsed.id,userId]);
     return Boolean(r.rowCount);
   }
   if(parsed.kind==="live"){
-    const r=await pool.query("select 1 from live_sessions where id=$1 and status in ('created','live') limit 1",[parsed.id]);
+    const r=await pool.query(
+      `select 1 from live_sessions l
+       where l.id=$1 and l.status in ('created','live')
+         and not exists(select 1 from live_bans b where b.live_id=l.id and b.user_id=$2)
+       limit 1`,
+      [parsed.id,userId]
+    );
     return Boolean(r.rowCount);
   }
   if(parsed.kind==="user"){
