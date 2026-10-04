@@ -249,6 +249,7 @@ async function internalJobsLoop(){
     try{
       await callInternalJob("/api/internal/jobs/store-actions");
       await callInternalJob("/api/internal/jobs/privacy");
+      await callInternalJob("/api/internal/jobs/battles");
     }catch(error){console.error("internal job loop error",safeError(error));}
     await sleep(5000);
   }
