@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { diamondPackages, purchaseIntents, users, vipPlans } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 const schema=z.object({
   provider:z.enum(["apple","google"]),
   productType:z.enum(["diamonds","vip"]),
@@ -12,7 +13,9 @@ const schema=z.object({
 });
 export async function POST(req:Request){
   try{
-    const session=await requireRequestSession(req),parsed=schema.safeParse(await req.json());
+    const session=await requireRequestSession(req);
+    const limited=await enforceRateLimit(req,"financial",session.userId); if(limited)return limited;
+    const parsed=schema.safeParse(await req.json());
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Intenção de compra inválida."}},{status:422});
     const beneficiary=parsed.data.beneficiaryUserId??session.userId;
     if(parsed.data.productType==="diamonds"&&beneficiary!==session.userId)return NextResponse.json({error:{code:"DIAMONDS_NOT_GIFTABLE",message:"Diamantes não podem ser comprados para outra conta."}},{status:422});
