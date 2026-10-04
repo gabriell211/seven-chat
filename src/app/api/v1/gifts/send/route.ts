@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { liveSessions, rooms } from "@/db/schema";
+import { liveBattles, liveSessions, rooms } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
 import { publishRealtimeBestEffort } from "@/lib/realtime";
 import { GiftError, sendGift } from "@/services/gifts";
@@ -41,6 +41,15 @@ export async function POST(req:Request){
     });
     const channel=contextType&&contextId?contextType+":"+contextId:"user:"+receiverId;
     await publishRealtimeBestEffort({channel,event:contextType==="live"?"live.gift.received":contextType==="room"?"room.gift.received":"notification.created",data:{senderId:session.userId,receiverId,giftId:parsed.data.giftId,quantity:parsed.data.quantity,transactionId:data.transactionId}});
+    if(contextType==="live"&&contextId){
+      const [battle]=await db.select({id:liveBattles.id,liveAId:liveBattles.liveAId,liveBId:liveBattles.liveBId,scoreA:liveBattles.scoreA,scoreB:liveBattles.scoreB,endsAt:liveBattles.endsAt})
+        .from(liveBattles).where(and(eq(liveBattles.status,"active"),or(eq(liveBattles.liveAId,contextId),eq(liveBattles.liveBId,contextId)))).limit(1);
+      if(battle){
+        const payload={battleId:battle.id,scoreA:battle.scoreA,scoreB:battle.scoreB,endsAt:battle.endsAt};
+        await publishRealtimeBestEffort({channel:"live:"+battle.liveAId,event:"live.battle.updated",data:payload});
+        await publishRealtimeBestEffort({channel:"live:"+battle.liveBId,event:"live.battle.updated",data:payload});
+      }
+    }
     return NextResponse.json({data},{status:201});
   }catch(error){
     if(error instanceof GiftError)return NextResponse.json({error:{code:error.code,message:error.message}},{status:["GIFT_INSUFFICIENT_BALANCE","GIFT_RETRY"].includes(error.code)?409:422});
