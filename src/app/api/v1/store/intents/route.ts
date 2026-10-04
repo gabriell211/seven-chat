@@ -32,5 +32,9 @@ export async function POST(req:Request){
       productType:parsed.data.productType,sku:parsed.data.sku,expiresAt:new Date(Date.now()+30*60*1000)
     }).returning({id:purchaseIntents.id,expiresAt:purchaseIntents.expiresAt});
     return NextResponse.json({data:{purchaseIntentId:intent.id,appAccountToken:intent.id,obfuscatedExternalAccountId:intent.id,storeProductId:storeId,expiresAt:intent.expiresAt}},{status:201});
-  }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
+  }catch(error){
+    const code=error instanceof Error?error.message:"STORE_INTENT_FAILED";
+    if(code==="UNAUTHORIZED")return NextResponse.json({error:{code,message:"Faça login."}},{status:401});
+    return NextResponse.json({error:{code:"STORE_INTENT_FAILED",message:"Não foi possível criar a intenção de compra."}},{status:500});
+  }
 }
