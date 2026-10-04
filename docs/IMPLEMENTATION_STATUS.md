@@ -30,18 +30,22 @@ This branch rebuilds the executable Seven Chat platform while the current produc
 
 The branch must not be called **1.0 production-ready** until these environment-dependent gates are proven:
 
-- A staging environment isolated from production with its own database, private object storage, Redis/rate-limit, LiveKit/TURN, realtime and worker deployments.
+- Staging database is now isolated on Supabase Free in sa-east-1. Private object storage, Redis/rate-limit, LiveKit/TURN, realtime and worker deployments still need isolated staging instances.
 - Real Apple/Google sandbox purchase fixtures and refund/revocation webhook exercises.
 - Real AdMob server-side verification fixture.
 - Native Android/iOS signed builds, device smoke tests, background/push notification validation and store compliance checks.
 - E2E browser/device suites against staging, plus concurrency/load tests for chat, gifts, rooms and live battles.
-- Backup/PITR restore drill with measured RPO/RTO and documented rollback.
+- Free-tier disaster recovery uses logical off-site dumps and a restore drill with measured RPO/RTO. Supabase PITR is a paid add-on and is not claimed by the free architecture.
 - Production observability/alert routing with SLO dashboards.
 - Final accessibility audit, privacy/legal review and operational runbooks.
 
-## Current infrastructure blockers observed
+## Staging infrastructure status
 
-- The connected Railway account is authenticated, but its trial is expired and Railway requires selecting a paid plan before a staging project can be created.
-- A Neon Marketplace installation is visible in Vercel, but the current connector scope returned 401 for the provisioning/product endpoint, so no staging Neon resource was created through that path.
+- Railway was removed from the critical path because its connected trial is expired and requires a paid plan.
+- A dedicated `Seven Chat Staging` Supabase project was created at $0/month in `sa-east-1`, separate from production and other projects.
+- Drizzle migrations `0000` and `0001` were applied successfully to PostgreSQL 17.
+- Supabase Security Advisor initially found all 54 public tables exposed without RLS. Staging was hardened so all 54 now have RLS enabled with no public policies; the backend remains the authority through direct PostgreSQL connections.
+- The repository includes `0002_secure_supabase.sql` so this protection and FK-index hardening are reproducible from source.
+- Supabase Free does not provide managed daily backups or PITR; production on a free architecture therefore requires scheduled logical off-site backups and periodic restore drills.
 
 No production database, deployment or paid infrastructure was modified while building this branch.
