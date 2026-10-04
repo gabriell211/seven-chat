@@ -5,8 +5,10 @@ import { oauthAccounts, profiles, users } from "@/db/schema";
 import { clearOAuthPending, createSession, getOAuthPending, hashPassword } from "@/lib/auth";
 import { oauthRegisterSchema, registerSchema } from "@/lib/validation";
 import { issueEmailVerification } from "@/services/auth-challenges";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req:Request){
+  const rate=await checkRateLimit(req,"auth"); if(!rate.ok)return NextResponse.redirect(new URL("/register?error=rate_limited",req.url),303);
   const form=Object.fromEntries(await req.formData());
   const oauth=await getOAuthPending();
 
