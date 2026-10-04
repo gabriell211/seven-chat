@@ -4,6 +4,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { liveBans, liveComments, liveSessions, profiles, users } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { publishRealtimeBestEffort } from "@/lib/realtime";
 const schema=z.object({body:z.string().trim().min(1).max(500)});
 export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){
