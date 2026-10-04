@@ -340,3 +340,27 @@ export const savedPosts = pgTable("saved_posts", {
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (t) => [primaryKey({ columns: [t.postId, t.userId] })]);
+
+
+export const userSessions = pgTable("user_sessions", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  deviceName: text("device_name").notNull().default("Unknown device"),
+  platform: text("platform").notNull().default("web"),
+  userAgent: text("user_agent"),
+  ipHash: text("ip_hash"),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  index("user_sessions_user_active_idx").on(t.userId, t.revokedAt, t.expiresAt),
+  index("user_sessions_expires_idx").on(t.expiresAt)
+]);
+
+export const userConsents = pgTable("user_consents", {
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  document: text("document").notNull(),
+  version: text("version").notNull(),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [primaryKey({ columns: [t.userId, t.document, t.version] })]);
