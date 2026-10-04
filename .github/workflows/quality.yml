@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   web:
@@ -71,17 +71,29 @@ jobs:
 
 
   migration_snapshot:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/seven_chat
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: npm install
       - run: rm -rf drizzle && npm run db:generate
+      - name: Commit generated migration snapshot
+        run: |
+          git config user.name "seven-chat-ci"
+          git config user.email "actions@users.noreply.github.com"
+          git add drizzle
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: version generated database migration"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: drizzle-migrations
