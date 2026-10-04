@@ -77,16 +77,7 @@ async function canSubscribe(userId:string,channel:string){
     );
     return Boolean(r.rowCount);
   }
-  if(parsed.kind==="user"){
-    if(parsed.id===userId)return true;
-    const blocked=await pool.query(`select 1 from blocks where (blocker_id=$1 and blocked_id=$2) or (blocker_id=$2 and blocked_id=$1) limit 1`,[userId,parsed.id]);
-    if(blocked.rowCount)return false;
-    const target=await pool.query<{is_private:boolean}>("select is_private from profiles where user_id=$1",[parsed.id]);
-    if(!target.rowCount)return false;
-    if(!target.rows[0]?.is_private)return true;
-    const follow=await pool.query("select 1 from follows where follower_id=$1 and following_id=$2 limit 1",[userId,parsed.id]);
-    return Boolean(follow.rowCount);
-  }
+  if(parsed.kind==="user")return parsed.id===userId;
   return false;
 }
 async function publish(channel:string,event:string,data:Record<string,unknown>){
