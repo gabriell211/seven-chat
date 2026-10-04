@@ -4,7 +4,9 @@ import { db } from "@/lib/db";
 import { users } from "@/db/schema";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { loginSchema } from "@/lib/validation";
+import { checkRateLimit } from "@/lib/rate-limit";
 export async function POST(req:Request){
+  const rate=await checkRateLimit(req,"auth"); if(!rate.ok)return NextResponse.redirect(new URL("/login?error=rate_limited",req.url),303);
   const parsed=loginSchema.safeParse(Object.fromEntries(await req.formData()));
   if(!parsed.success)return NextResponse.redirect(new URL("/login?error=validation",req.url),303);
   const identifier=parsed.data.identifier.trim().toLowerCase().replace(/^@/,"");
