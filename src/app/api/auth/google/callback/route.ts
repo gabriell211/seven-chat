@@ -18,7 +18,7 @@ export async function GET(req:Request){
   if(!code||!state||!expectedState||state!==expectedState)return NextResponse.redirect(new URL("/login?error=oauth_state",req.url));
   const clientId=process.env.GOOGLE_CLIENT_ID;
   const clientSecret=process.env.GOOGLE_CLIENT_SECRET;
-  const base=process.env.NEXT_PUBLIC_APP_URL??url.origin;
+  const base=process.env.NEXT_PUBLIC_APP_URL?.trim()||url.origin;
   if(!clientId||!clientSecret)return NextResponse.redirect(new URL("/login?error=google_not_configured",req.url));
   try{
     const tokenResponse=await fetch("https://oauth2.googleapis.com/token",{
