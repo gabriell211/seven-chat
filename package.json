@@ -24,7 +24,9 @@
     "zod": "4.6.5",
     "livekit-server-sdk": "2.19.1",
     "@aws-sdk/client-s3": "3.1146.0",
-    "@aws-sdk/s3-request-presigner": "3.1145.0"
+    "@aws-sdk/s3-request-presigner": "3.1145.0",
+    "@apple/app-store-server-library": "3.1.0",
+    "google-auth-library": "11.1.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
