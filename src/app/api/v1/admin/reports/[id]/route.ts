@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { moderationActions, reports } from "@/db/schema";
+import { reports } from "@/db/schema";
 import { requireAdmin } from "@/services/admin";
 import { executeModeration, ModerationError } from "@/services/moderation";
 
@@ -18,17 +19,13 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Ação inválida."}},{status:422});
 
     if(parsed.data.action==="none"){
-      await db.update(reports).set({status:parsed.data.status}).where(eqReport(id));
-      return NextResponse.json({data:{updated:true,action:"none"}});
+      const changed=await db.update(reports).set({status:parsed.data.status}).where(eq(reports.id,id)).returning({id:reports.id});
+      if(!changed.length)return NextResponse.json({error:{code:"NOT_FOUND",message:"Denúncia não encontrada."}},{status:404});
+      return NextResponse.json({data:{updated:true,action:"none",status:parsed.data.status}});
     }
 
     const result=await executeModeration({
       actorId:admin.userId,actorRole:admin.role,reportId:id,action:parsed.data.action,reason:parsed.data.reason
-    });
-    await db.insert(moderationActions).values({
-      actorId:admin.userId,targetUserId:result.targetUserId,reportId:id,
-      action:parsed.data.action,reason:parsed.data.reason,
-      metadata:{requestedStatus:parsed.data.status}
     });
     return NextResponse.json({data:{updated:true,...result}});
   }catch(error){
@@ -39,8 +36,4 @@ export async function PATCH(req:Request,{params}:{params:Promise<{id:string}>}){
     const code=error instanceof Error?error.message:"FORBIDDEN";
     return NextResponse.json({error:{code,message:"Acesso administrativo necessário."}},{status:code==="UNAUTHORIZED"?401:403});
   }
-}
-
-function eqReport(id:string){
-  return {getSQL:()=>({sqlChunks:["id = ",id]})} as never;
 }
