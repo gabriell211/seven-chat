@@ -1,0 +1,4 @@
+export default async function ForgotPassword({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+  const p=await searchParams;
+  return <main className="auth"><section className="authbox stack"><div><h1>Recuperar senha</h1><p className="muted">Se a conta existir, enviaremos um link válido por 1 hora.</p></div>{p.sent&&<div className="success">Confira seu e-mail para continuar.</div>}<form className="stack" action="/api/auth/password-reset/request" method="post"><input className="input" name="identifier" placeholder="E-mail ou @usuário" required/><button className="button">Enviar link</button></form><a className="button secondary" href="/login">Voltar</a></section></main>;
+}
