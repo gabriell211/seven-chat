@@ -7,6 +7,8 @@ export type SendGiftInput={
   giftId:string;
   quantity:number;
   idempotencyKey:string;
+  contextType?:"live"|"room";
+  contextId?:string;
 };
 
 export class GiftError extends Error{
@@ -59,9 +61,23 @@ export async function sendGift(input:SendGiftInput):Promise<{transactionId:strin
       [randomUUID(),transactionId,senderAccount.rows[0].id,amount,randomUUID(),sink.rows[0].id]
     );
     await client.query(
-      "insert into gift_transactions(id,sender_id,receiver_id,gift_id,ledger_transaction_id,quantity) values($1,$2,$3,$4,$5,$6)",
-      [giftTransactionId,input.senderId,input.receiverId,input.giftId,transactionId,input.quantity]
+      "insert into gift_transactions(id,sender_id,receiver_id,gift_id,ledger_transaction_id,quantity,context_type,context_id) values($1,$2,$3,$4,$5,$6,$7,$8)",
+      [giftTransactionId,input.senderId,input.receiverId,input.giftId,transactionId,input.quantity,input.contextType??null,input.contextId??null]
     );
+    if(input.contextType==="live"&&input.contextId){
+      const battle=await client.query<{id:string;live_a_id:string;live_b_id:string;multiplier_bps:number}>(
+        "select id,live_a_id,live_b_id,multiplier_bps from live_battles where status='active' and ends_at>now() and (live_a_id=$1 or live_b_id=$1) for update limit 1",
+        [input.contextId]
+      );
+      if(battle.rowCount){
+        const points=Math.max(0,Math.floor(amount*battle.rows[0].multiplier_bps/10000));
+        if(battle.rows[0].live_a_id===input.contextId){
+          await client.query("update live_battles set score_a=score_a+$2 where id=$1",[battle.rows[0].id,points]);
+        }else{
+          await client.query("update live_battles set score_b=score_b+$2 where id=$1",[battle.rows[0].id,points]);
+        }
+      }
+    }
     await client.query("commit");
     return {transactionId,giftTransactionId};
   }catch(error){
