@@ -531,3 +531,23 @@ export const purchaseIntents = pgTable("purchase_intents", {
   index("purchase_intents_purchaser_idx").on(t.purchaserUserId, t.createdAt),
   index("purchase_intents_expiry_idx").on(t.status, t.expiresAt)
 ]);
+
+
+export const storeActionJobs = pgTable("store_action_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull(),
+  action: text("action").notNull(),
+  externalTransactionId: text("external_transaction_id").notNull(),
+  encryptedToken: text("encrypted_token").notNull(),
+  productId: text("product_id").notNull(),
+  status: text("status").notNull().default("queued"),
+  attempts: integer("attempts").notNull().default(0),
+  availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  uniqueIndex("store_action_unique_uq").on(t.provider, t.action, t.externalTransactionId),
+  index("store_action_queue_idx").on(t.status, t.availableAt)
+]);
