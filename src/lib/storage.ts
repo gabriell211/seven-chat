@@ -1,4 +1,4 @@
-import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 function config(){
@@ -22,4 +22,12 @@ export async function createDownloadUrl(key:string,expiresIn=60){
 export async function headPrivateObject(key:string){
   const {bucket,s3}=client();
   return s3.send(new HeadObjectCommand({Bucket:bucket,Key:key}));
+}
+export async function putPrivateObject(input:{key:string;body:string|Uint8Array;contentType:string}){
+  const {bucket,s3}=client();
+  await s3.send(new PutObjectCommand({Bucket:bucket,Key:input.key,Body:input.body,ContentType:input.contentType}));
+}
+export async function deletePrivateObject(key:string){
+  const {bucket,s3}=client();
+  await s3.send(new DeleteObjectCommand({Bucket:bucket,Key:key}));
 }
