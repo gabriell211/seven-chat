@@ -4,8 +4,10 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { users } from "@/db/schema";
 import { requestPasswordReset } from "@/services/auth-challenges";
+import { enforceRateLimit } from "@/lib/rate-limit";
 const schema=z.object({identifier:z.string().min(3).max(254)});
 export async function POST(req:Request){
+  const limited=await enforceRateLimit(req,"auth"); if(limited)return limited;
   const parsed=schema.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return NextResponse.json({data:{accepted:true}});
   const ident=parsed.data.identifier.trim().toLowerCase().replace(/^@/,"");
