@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { oauthAccounts, profiles, users } from "@/db/schema";
 import { clearOAuthPending, createSession, getOAuthPending, hashPassword } from "@/lib/auth";
 import { oauthRegisterSchema, registerSchema } from "@/lib/validation";
+import { issueEmailVerification } from "@/services/auth-challenges";
 
 export async function POST(req:Request){
   const form=Object.fromEntries(await req.formData());
@@ -34,9 +35,12 @@ export async function POST(req:Request){
   const exists=await db.select({id:users.id}).from(users).where(or(eq(users.email,v.email),eq(users.username,v.username))).limit(1);
   if(exists.length)return NextResponse.redirect(new URL("/register?error=exists",req.url),303);
   const [user]=await db.insert(users).values({
-    email:v.email,username:v.username,passwordHash:hashPassword(v.password),birthDate:v.birthDate,status:"active"
+    email:v.email,username:v.username,passwordHash:hashPassword(v.password),birthDate:v.birthDate,status:"pending_verification"
   }).returning({id:users.id,username:users.username});
   await db.insert(profiles).values({userId:user.id,displayName:v.displayName});
-  await createSession({userId:user.id,username:user.username});
-  return NextResponse.redirect(new URL("/",req.url),303);
+  try{await issueEmailVerification({id:user.id,email:v.email,username:user.username});}
+  catch{
+    return NextResponse.redirect(new URL("/verify-email?pending=1&email="+encodeURIComponent(v.email),req.url),303);
+  }
+  return NextResponse.redirect(new URL("/verify-email?pending=1&email="+encodeURIComponent(v.email),req.url),303);
 }
