@@ -504,3 +504,30 @@ export const webhookEvents = pgTable("webhook_events", {
   processedAt: timestamp("processed_at", { withTimezone: true }),
   lastError: text("last_error")
 }, (t) => [uniqueIndex("webhook_provider_event_uq").on(t.provider, t.externalEventId)]);
+
+
+export const fanProducts = pgTable("fan_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  code: text("code").notNull(),
+  durationDays: integer("duration_days").notNull(),
+  priceDiamonds: integer("price_diamonds").notNull(),
+  tier: text("tier").notNull().default("mega_fan"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [uniqueIndex("fan_products_code_uq").on(t.code)]);
+
+export const purchaseIntents = pgTable("purchase_intents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  purchaserUserId: uuid("purchaser_user_id").notNull().references(() => users.id),
+  beneficiaryUserId: uuid("beneficiary_user_id").notNull().references(() => users.id),
+  provider: text("provider").notNull(),
+  productType: text("product_type").notNull(),
+  sku: text("sku").notNull(),
+  status: text("status").notNull().default("created"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (t) => [
+  index("purchase_intents_purchaser_idx").on(t.purchaserUserId, t.createdAt),
+  index("purchase_intents_expiry_idx").on(t.status, t.expiresAt)
+]);
