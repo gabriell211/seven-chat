@@ -27,7 +27,9 @@
     "@aws-sdk/s3-request-presigner": "3.1145.0",
     "@apple/app-store-server-library": "3.1.0",
     "google-auth-library": "11.1.0",
-    "resend": "6.32.0"
+    "resend": "6.32.0",
+    "@upstash/ratelimit": "2.2.0",
+    "@upstash/redis": "1.39.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
