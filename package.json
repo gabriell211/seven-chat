@@ -31,7 +31,10 @@
     "google-auth-library": "11.1.0",
     "resend": "6.32.0",
     "@upstash/ratelimit": "2.2.0",
-    "@upstash/redis": "1.39.0"
+    "@upstash/redis": "1.39.0",
+    "livekit-client": "2.22.3",
+    "@livekit/components-react": "2.9.24",
+    "@livekit/components-styles": "1.2.0"
   },
   "devDependencies": {
     "@types/node": "^24.10.0",
