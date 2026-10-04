@@ -1,0 +1,7 @@
+import {ReportActions} from "./report-actions";import {redirect} from "next/navigation";import {adminApi} from "../lib/api";
+type Stats={data:{activeUsers:number;openReports:number;activeLives:number}};
+type Reports={data:Array<{id:string;targetType:string;reason:string;status:string;priority:number;reporterUsername:string;createdAt:string}>};
+export default async function Dashboard(){
+  let stats:Stats,reports:Reports;try{[stats,reports]=await Promise.all([adminApi<Stats>("/api/v1/admin/stats"),adminApi<Reports>("/api/v1/admin/reports?status=open")])}catch{redirect("/login")}
+  return <main className="wrap grid"><header><h1>Seven Chat Admin</h1><p className="muted">Moderação e saúde operacional.</p></header><section className="grid metrics"><div className="card"><div className="muted">Usuários ativos</div><div className="metric">{stats.data.activeUsers}</div></div><div className="card"><div className="muted">Denúncias abertas</div><div className="metric">{stats.data.openReports}</div></div><div className="card"><div className="muted">Lives agora</div><div className="metric">{stats.data.activeLives}</div></div></section><section className="card"><h2>Fila de denúncias</h2>{reports.data.length===0?<p className="muted">Fila vazia.</p>:reports.data.map(r=><div className="row" key={r.id}><div><strong>{r.reason}</strong><div className="muted">{r.targetType} · por @{r.reporterUsername}</div></div><span>P{r.priority}</span><span>{r.status}</span><ReportActions id={r.id}/></div>)}</section></main>;
+}

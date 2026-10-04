@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1791082244776,
+      "tag": "0000_smart_blink",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791128169693,
+      "tag": "0001_live-interaction",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791139800000,
+      "tag": "0002_secure_supabase",
+      "breakpoints": true
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Rooms(){return <AppShell><div className="card"><h2>Salas de voz</h2><p className="muted">Salas públicas e privadas, palco com até 10 pessoas, host/co-host, moderação e gifts.</p></div></AppShell>}

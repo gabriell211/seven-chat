@@ -1,0 +1,4 @@
+export default async function ResetPassword({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
+  const p=await searchParams,token=typeof p.token==="string"?p.token:"";
+  return <main className="auth"><section className="authbox stack"><div><h1>Nova senha</h1><p className="muted">Use pelo menos 10 caracteres.</p></div>{p.error&&<div className="error">Link inválido, expirado ou senha inválida.</div>}{p.success?<><div className="success">Senha alterada com sucesso.</div><a className="button" href="/login">Entrar</a></>:<form className="stack" action="/api/auth/password-reset/confirm" method="post"><input type="hidden" name="token" value={token}/><input className="input" type="password" name="password" minLength={10} maxLength={128} placeholder="Nova senha" required/><button className="button">Alterar senha</button></form>}</section></main>;
+}

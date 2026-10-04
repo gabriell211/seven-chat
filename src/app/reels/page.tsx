@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Reels(){return <AppShell><div className="card empty">Reels: feed vertical, autoplay controlado, comentários e recomendação server-side.</div></AppShell>}

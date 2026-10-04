@@ -1,0 +1,1 @@
+import { AppShell } from "@/components/app-shell"; export default function Lives(){return <AppShell><div className="card"><h2>Lives</h2><p className="muted">Transmissão, até 4 convidados, chat leve, gifts, ranking e batalhas. A mídia será transportada por RTC dedicado.</p></div></AppShell>}
