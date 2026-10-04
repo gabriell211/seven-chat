@@ -1,0 +1,25 @@
+name: Seven Chat Migration Generator
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm install
+      - run: npm run db:generate -- --name live-interaction
+      - uses: actions/upload-artifact@v4
+        with:
+          name: drizzle-generated
+          path: drizzle
+          if-no-files-found: error
