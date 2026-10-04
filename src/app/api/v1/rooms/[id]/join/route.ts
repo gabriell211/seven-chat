@@ -21,6 +21,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
 
     const [membership]=await db.select({role:roomMembers.role}).from(roomMembers)
       .where(and(eq(roomMembers.roomId,id),eq(roomMembers.userId,session.userId))).limit(1);
+    if(membership?.role==="banned")return NextResponse.json({error:{code:"ROOM_BANNED",message:"Você foi removido desta sala."}},{status:403});
     if(room.visibility==="invite"&&!membership)return NextResponse.json({error:{code:"INVITE_REQUIRED",message:"Esta sala exige convite."}},{status:403});
     if((room.visibility==="password"||room.visibility==="private")&&room.passwordHash&&!membership){
       if(!parsed.data.password||!verifyPassword(parsed.data.password,room.passwordHash)){
