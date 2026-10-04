@@ -29,7 +29,11 @@ export async function GET(req:Request,{params}:{params:Promise<{id:string}>}){
       .orderBy(desc(messages.createdAt)).limit(51);
     const page=rows.slice(0,50);
     return NextResponse.json({data:page,nextCursor:rows.length>50?page.at(-1)?.createdAt.toISOString()??null:null});
-  }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
+  }catch(error){
+    const code=error instanceof Error?error.message:"CHAT_FAILED";
+    if(code==="UNAUTHORIZED")return NextResponse.json({error:{code,message:"Faça login."}},{status:401});
+    return NextResponse.json({error:{code:"CHAT_FAILED",message:"Não foi possível processar a conversa."}},{status:500});
+  }
 }
 
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
@@ -61,5 +65,9 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
       data:{id:message.id,conversationId:id,senderId:session.userId,type:parsed.data.type,createdAt:message.createdAt.toISOString()}
     });
     return NextResponse.json({data:message},{status:201});
-  }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
+  }catch(error){
+    const code=error instanceof Error?error.message:"CHAT_FAILED";
+    if(code==="UNAUTHORIZED")return NextResponse.json({error:{code,message:"Faça login."}},{status:401});
+    return NextResponse.json({error:{code:"CHAT_FAILED",message:"Não foi possível processar a conversa."}},{status:500});
+  }
 }
