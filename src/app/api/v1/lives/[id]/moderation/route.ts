@@ -23,7 +23,8 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Ação de moderação inválida."}},{status:422});
     if(!await canModerate(id,session.userId))return NextResponse.json({error:{code:"FORBIDDEN",message:"Sem permissão para moderar."}},{status:403});
     if(parsed.data.action==="pin_comment"){
-      await db.transaction(async tx=>{await tx.update(liveComments).set({pinned:false}).where(eq(liveComments.liveId,id));await tx.update(liveComments).set({pinned:true}).where(and(eq(liveComments.id,parsed.data.commentId),eq(liveComments.liveId,id)));});
+      const commentId=parsed.data.commentId;
+      await db.transaction(async tx=>{await tx.update(liveComments).set({pinned:false}).where(eq(liveComments.liveId,id));await tx.update(liveComments).set({pinned:true}).where(and(eq(liveComments.id,commentId),eq(liveComments.liveId,id)));});
     }else if(parsed.data.action==="delete_comment"){
       await db.update(liveComments).set({deletedAt:new Date()}).where(and(eq(liveComments.id,parsed.data.commentId),eq(liveComments.liveId,id)));
     }else if(parsed.data.action==="ban_user"){
