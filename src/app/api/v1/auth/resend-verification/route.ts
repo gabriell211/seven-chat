@@ -34,7 +34,11 @@ export async function POST(req:Request){
       try{
         await issueEmailVerification(user);
       }catch(error){
-        if(process.env.NODE_ENV!=="production")console.error("verification email failed",error);
+        console.error("verification email resend failed",error);
+        return NextResponse.json(
+          {error:{code:"EMAIL_DELIVERY_FAILED",message:"Não foi possível enviar o e-mail de confirmação agora. Tente novamente em instantes."}},
+          {status:503}
+        );
       }
     }
   }catch(error){
