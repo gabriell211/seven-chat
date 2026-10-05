@@ -23,7 +23,12 @@ jobs:
           java-version: "17"
       - name: Install dependencies
         run: npm install
-      - name: Generate branded launcher icon\n        run: |\n          sudo apt-get update -qq\n          sudo apt-get install -y librsvg2-bin\n          rsvg-convert -w 1024 -h 1024 assets/icon.svg -o assets/icon.png\n      - name: Generate native Android project
+      - name: Generate branded launcher icon
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y librsvg2-bin
+          rsvg-convert -w 1024 -h 1024 assets/icon.svg -o assets/icon.png
+      - name: Generate native Android project
         env:
           EXPO_PUBLIC_SEVEN_API_URL: https://seven-chat-gwt1.vercel.app
         run: npx expo prebuild --platform android --non-interactive
@@ -47,5 +52,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="v1.0.1"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" --title "Seven Chat 1.0.1" --notes "Seven Chat 1.0.1 — Android APK."
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --target "$GITHUB_SHA" --title "Seven Chat 1.0.1" --notes "Seven Chat 1.0.1 — Android APK com logo e checkout InfinitePay."
           gh release upload "$TAG" Seven-Chat-1.0.1.apk --clobber
