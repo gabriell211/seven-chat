@@ -2,21 +2,22 @@
   "expo": {
     "name": "Seven Chat",
     "slug": "seven-chat",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "scheme": "sevenchat",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gabriell211.sevenchat",
-      "buildNumber": "1"
+      "buildNumber": "2"
     },
     "android": {
       "package": "com.gabriell211.sevenchat",
       "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0b0712"
       },
-      "versionCode": 1
+      "versionCode": 2
     },
     "plugins": [
       "expo-secure-store",
@@ -25,6 +26,7 @@
     ],
     "extra": {
       "apiUrl": "https://seven-chat-gwt1.vercel.app"
-    }
+    },
+    "icon": "./assets/icon.png"
   }
 }

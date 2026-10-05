@@ -3,7 +3,7 @@ import { pool } from "@/lib/db";
 import { ensureLedgerAccount, ensureUserDiamondAccount, postLedgerTransaction } from "@/services/ledger";
 
 export type VerifiedStorePurchase={
-  provider:"apple"|"google";
+  provider:"apple"|"google"|"infinitepay";
   purchaserUserId:string;
   beneficiaryUserId?:string;
   purchaseIntentId?:string;
@@ -42,10 +42,10 @@ export async function fulfillVerifiedPurchase(p:VerifiedStorePurchase){
 
     const product=await client.query<{id:string;sku:string;kind:"diamonds"|"vip";diamonds:number|null;bonus_diamonds:number|null;tier:string|null;duration_days:number|null}>(
       `select id,sku,'diamonds'::text kind,diamonds,bonus_diamonds,null::text tier,null::int duration_days
-       from diamond_packages where is_active=true and store_product_ids->>$1=$2
+       from diamond_packages where is_active=true and (($1='infinitepay' and sku=$2) or store_product_ids->>$1=$2)
        union all
        select id,code sku,'vip'::text kind,null::int diamonds,null::int bonus_diamonds,tier,duration_days
-       from vip_plans where is_active=true and store_product_ids->>$1=$2
+       from vip_plans where is_active=true and (($1='infinitepay' and code=$2) or store_product_ids->>$1=$2)
        limit 1`,
       [p.provider,p.storeProductId]
     );
