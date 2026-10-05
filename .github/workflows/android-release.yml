@@ -1,0 +1,50 @@
+name: Android Release
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Install dependencies
+        run: npm install
+      - name: Generate native Android project
+        env:
+          EXPO_PUBLIC_SEVEN_API_URL: https://seven-chat-gwt1.vercel.app
+        run: npx expo prebuild --platform android --non-interactive
+      - name: Build installable APK
+        env:
+          EXPO_PUBLIC_SEVEN_API_URL: https://seven-chat-gwt1.vercel.app
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../../../Seven-Chat-1.0.0.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Seven-Chat-1.0.0-APK
+          path: Seven-Chat-1.0.0.apk
+          retention-days: 30
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 || gh release create "${GITHUB_REF_NAME}" --title "Seven Chat 1.0.0" --notes "Seven Chat 1.0.0 — Android APK."
+          gh release upload "${GITHUB_REF_NAME}" Seven-Chat-1.0.0.apk --clobber
