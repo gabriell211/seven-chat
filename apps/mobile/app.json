@@ -2,14 +2,14 @@
   "expo": {
     "name": "Seven Chat",
     "slug": "seven-chat",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "scheme": "sevenchat",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gabriell211.sevenchat",
-      "buildNumber": "2"
+      "buildNumber": "3"
     },
     "android": {
       "package": "com.gabriell211.sevenchat",
@@ -17,7 +17,7 @@
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#0b0712"
       },
-      "versionCode": 2
+      "versionCode": 3
     },
     "plugins": [
       "expo-secure-store",
