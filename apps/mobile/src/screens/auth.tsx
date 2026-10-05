@@ -5,14 +5,15 @@ import {setToken} from "../auth";
 import {theme} from "../theme";
 
 export function LoginScreen({onDone,onRegister}:{onDone:()=>void;onRegister:()=>void}){
-  const [identifier,setIdentifier]=useState(""),[password,setPassword]=useState(""),[error,setError]=useState(""),[busy,setBusy]=useState(false);
+  const [identifier,setIdentifier]=useState(""),[password,setPassword]=useState(""),[totpCode,setTotpCode]=useState(""),[needsTotp,setNeedsTotp]=useState(false),[error,setError]=useState(""),[busy,setBusy]=useState(false);
   const submit=async()=>{if(busy)return;setBusy(true);setError("");try{
-    const result=await api<{data:{accessToken:string}}>("/api/v1/auth/login",{method:"POST",body:JSON.stringify({identifier,password,deviceName:"Seven Chat Mobile",platform:Platform.OS==="ios"?"ios":"android"})});
+    const result=await api<{data:{accessToken:string}}>("/api/v1/auth/login",{method:"POST",body:JSON.stringify({identifier,password,totpCode:totpCode||undefined,deviceName:"Seven Chat Mobile",platform:Platform.OS==="ios"?"ios":"android"})});
     await setToken(result.data.accessToken);onDone();
-  }catch(e){setError(e instanceof Error?e.message:"Falha ao entrar");}finally{setBusy(false)}};
+  }catch(e){const m=e instanceof Error?e.message:"Falha ao entrar";if(m.includes("TOTP_REQUIRED")||m.toLowerCase().includes("autenticador"))setNeedsTotp(true);setError(m);}finally{setBusy(false)}};
   return <SafeAreaView style={s.center}><View style={s.card}><Text style={s.logo}>Seven <Text style={s.brand}>Chat</Text></Text><Text style={s.muted}>Entre para continuar</Text>
     <TextInput accessibilityLabel="E-mail ou usuário" autoCapitalize="none" value={identifier} onChangeText={setIdentifier} placeholder="E-mail ou @usuário" placeholderTextColor={theme.muted} style={s.input}/>
     <TextInput accessibilityLabel="Senha" secureTextEntry value={password} onChangeText={setPassword} placeholder="Senha" placeholderTextColor={theme.muted} style={s.input}/>
+    {needsTotp?<TextInput accessibilityLabel="Código do autenticador" keyboardType="number-pad" maxLength={6} value={totpCode} onChangeText={setTotpCode} placeholder="Código de 6 dígitos" placeholderTextColor={theme.muted} style={s.input}/>:null}
     {error?<Text style={s.error}>{error}</Text>:null}<Pressable onPress={submit} style={s.button} disabled={busy}><Text style={s.buttonText}>{busy?"Entrando…":"Entrar"}</Text></Pressable>
     <Pressable onPress={onRegister}><Text style={s.link}>Criar conta</Text></Pressable>
   </View></SafeAreaView>;
