@@ -22,6 +22,13 @@
       "when": 1791139800000,
       "tag": "0002_secure_supabase",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791153000000,
+      "tag": "0003_account_security",
+      "breakpoints": true
     }
   ]
 }
