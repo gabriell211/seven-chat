@@ -1,0 +1,23 @@
+name: Database Backup
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * *"
+permissions:
+  contents: read
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.BACKUP_DATABASE_URL != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Logical backup
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: bash scripts/backup-db.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: seven-chat-db-${{ github.run_id }}
+          path: backups/*
+          retention-days: 14
