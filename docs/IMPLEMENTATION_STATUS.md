@@ -11,7 +11,7 @@ This branch rebuilds the executable Seven Chat platform while the current produc
 - Durable worker for private media processing, store retries, privacy jobs and timed live-battle completion.
 - PostgreSQL/Drizzle migrations validated from an empty PostgreSQL 17 database.
 - Revocable per-device native sessions and HttpOnly web sessions.
-- Registration age rule (13–99), versioned legal consent, disposable-email rejection, e-mail verification and password reset.
+- Registration age rule (13–99), versioned legal consent, disposable-email rejection, e-mail verification, password reset, password/e-mail change with session revocation, temporary deactivation/reactivation and TOTP 2FA.
 - Feed, posts, comments, reactions, saved posts, search, follow/block and notifications.
 - Direct/group conversations, persisted messages, typing/realtime refresh, media messages, VIP video gating and server-controlled view-once.
 - Private S3-compatible upload authorization, magic-byte inspection, malware gate, metadata stripping, image normalization, video/audio transcode and signed reads.
@@ -33,9 +33,9 @@ The branch must not be called **1.0 production-ready** until these environment-d
 - Staging database is now isolated on Supabase Free in sa-east-1. Private object storage, Redis/rate-limit, LiveKit/TURN, realtime and worker deployments still need isolated staging instances.
 - Real Apple/Google sandbox purchase fixtures and refund/revocation webhook exercises.
 - Real AdMob server-side verification fixture.
-- Native Android/iOS signed builds, device smoke tests, background/push notification validation and store compliance checks.
+- Native Android/iOS signed builds, device smoke tests, background/push notification validation and store compliance checks. Mobile metadata is prepared as 1.0.0; signed artifacts still require the platform signing/build environment.
 - E2E browser/device suites against staging, plus concurrency/load tests for chat, gifts, rooms and live battles.
-- Free-tier disaster recovery uses logical off-site dumps and a restore drill with measured RPO/RTO. Supabase PITR is a paid add-on and is not claimed by the free architecture.
+- Free-tier disaster recovery now has executable logical backup/restore scripts and a runbook; a real off-site backup/restore drill still requires BACKUP_DATABASE_URL/RESTORE_DATABASE_URL and measured RPO/RTO. Supabase PITR is a paid add-on and is not claimed by the free architecture.
 - Production observability/alert routing with SLO dashboards.
 - Final accessibility audit, privacy/legal review and operational runbooks.
 
@@ -49,3 +49,9 @@ The branch must not be called **1.0 production-ready** until these environment-d
 - Supabase Free does not provide managed daily backups or PITR; production on a free architecture therefore requires scheduled logical off-site backups and periodic restore drills.
 
 No production database, deployment or paid infrastructure was modified while building this branch.
+
+## Security completion notes
+
+- TOTP enrollment and login enforcement are implemented server-side; mobile login handles the second factor challenge.
+- WebAuthn credential storage is migrated and RLS-protected, but passkey ceremony endpoints remain an external-browser/security integration gate and are not falsely marked complete.
+- Staging schema currently has 56/56 public tables protected by RLS.
