@@ -29,6 +29,13 @@
       "when": 1791153000000,
       "tag": "0003_account_security",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791199000000,
+      "tag": "0004_users_username_compat",
+      "breakpoints": true
     }
   ]
 }
