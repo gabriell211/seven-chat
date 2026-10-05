@@ -4,15 +4,71 @@ import { pool } from "@/lib/db";
 import { LEGAL_VERSION, PRIVACY_DOCUMENT, TERMS_DOCUMENT } from "@/lib/legal";
 import { ensureUsersUsernameColumn } from "@/lib/schema-compat";
 
+const AUTH_TABLES=[
+  "users",
+  "profiles",
+  "user_consents",
+  "auth_challenges",
+  "user_sessions",
+  "account_security",
+  "oauth_accounts"
+] as const;
+
 export async function GET(req:Request){
   if(process.env.VERCEL_ENV==="production"){
     return NextResponse.json({error:"not_found"},{status:404});
   }
 
+  const url=new URL(req.url);
   const expected=process.env.E2E_TEST_KEY;
-  const supplied=new URL(req.url).searchParams.get("key");
+  const supplied=url.searchParams.get("key");
   if(!expected||!supplied||supplied!==expected){
     return NextResponse.json({error:"unauthorized"},{status:401});
+  }
+
+  if(url.searchParams.get("mode")==="inspect"){
+    const columns=await pool.query<{
+      table_name:string;
+      column_name:string;
+      data_type:string;
+      udt_name:string;
+      is_nullable:string;
+      column_default:string|null;
+    }>(`
+      SELECT table_name,column_name,data_type,udt_name,is_nullable,column_default
+      FROM information_schema.columns
+      WHERE table_schema='public'
+        AND table_name=ANY($1::text[])
+      ORDER BY table_name,ordinal_position
+    `,[AUTH_TABLES]);
+
+    const constraints=await pool.query<{
+      table_name:string;
+      constraint_name:string;
+      constraint_type:string;
+    }>(`
+      SELECT tc.table_name,tc.constraint_name,tc.constraint_type
+      FROM information_schema.table_constraints tc
+      WHERE tc.table_schema='public'
+        AND tc.table_name=ANY($1::text[])
+      ORDER BY tc.table_name,tc.constraint_name
+    `,[AUTH_TABLES]);
+
+    const enumValues=await pool.query<{type_name:string;value:string}>(`
+      SELECT t.typname AS type_name,e.enumlabel AS value
+      FROM pg_type t
+      JOIN pg_enum e ON t.oid=e.enumtypid
+      JOIN pg_namespace n ON n.oid=t.typnamespace
+      WHERE n.nspname='public'
+      ORDER BY t.typname,e.enumsortorder
+    `);
+
+    return NextResponse.json({
+      tables:AUTH_TABLES,
+      columns:columns.rows,
+      constraints:constraints.rows,
+      enums:enumValues.rows
+    });
   }
 
   await ensureUsersUsernameColumn();
