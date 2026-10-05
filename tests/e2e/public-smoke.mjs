@@ -1,0 +1,1 @@
+const base=process.env.BASE_URL;if(!base)throw new Error("BASE_URL is required");const checks=["/","/login","/register","/api/health"];for(const p of checks){const r=await fetch(base+p,{redirect:"manual"});if(r.status>=500)throw new Error(`${p} -> ${r.status}`);console.log(p,r.status)}
