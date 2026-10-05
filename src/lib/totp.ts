@@ -1,0 +1,7 @@
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+const alphabet="ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+export function generateTotpSecret(){const b=randomBytes(20);let bits=0,value=0,out="";for(const x of b){value=(value<<8)|x;bits+=8;while(bits>=5){out+=alphabet[(value>>>(bits-5))&31];bits-=5;}}if(bits>0)out+=alphabet[(value<<(5-bits))&31];return out;}
+function decode(s:string){let bits=0,value=0;const out:number[]=[];for(const ch of s.replace(/=+$/,"").toUpperCase()){const i=alphabet.indexOf(ch);if(i<0)continue;value=(value<<5)|i;bits+=5;if(bits>=8){out.push((value>>>(bits-8))&255);bits-=8;}}return Buffer.from(out);}
+function code(secret:string,counter:number){const b=Buffer.alloc(8);b.writeBigUInt64BE(BigInt(counter));const h=createHmac("sha1",decode(secret)).update(b).digest();const o=h[h.length-1]!&15;const n=(h.readUInt32BE(o)&0x7fffffff)%1_000_000;return n.toString().padStart(6,"0");}
+export function verifyTotp(secret:string,input:string,now=Date.now()){if(!/^\d{6}$/.test(input))return false;const c=Math.floor(now/30000);for(let d=-1;d<=1;d++){const expected=Buffer.from(code(secret,c+d));const actual=Buffer.from(input);if(expected.length===actual.length&&timingSafeEqual(expected,actual))return true;}return false;}
+export function totpUri(secret:string,email:string){return `otpauth://totp/Seven%20Chat:${encodeURIComponent(email)}?secret=${secret}&issuer=Seven%20Chat&algorithm=SHA1&digits=6&period=30`;}
