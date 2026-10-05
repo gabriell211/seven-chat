@@ -6,14 +6,20 @@ import { profiles, userConsents, users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { isAllowedRegistrationEmail } from "@/lib/email-policy";
 import { LEGAL_VERSION, PRIVACY_DOCUMENT, TERMS_DOCUMENT } from "@/lib/legal";
-import { enforceRateLimit } from "@/lib/rate-limit";
+import { checkRateLimit } from "@/lib/rate-limit";
 import { registerSchema } from "@/lib/validation";
 import { issueEmailVerification } from "@/services/auth-challenges";
 
 const schema=registerSchema.and(z.object({termsAccepted:z.literal(true)}));
 
 export async function POST(req:Request){
-  const limited=await enforceRateLimit(req,"auth"); if(limited)return limited;
+  const rate=await checkRateLimit(req,"auth");
+  if(!rate.ok&&rate.status===429){
+    return NextResponse.json(
+      {error:{code:"RATE_LIMITED",message:"Muitas tentativas. Tente novamente em instantes."}},
+      {status:429,headers:{"retry-after":String(rate.retryAfter??60)}}
+    );
+  }
   const parsed=schema.safeParse(await req.json().catch(()=>null));
   if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Cadastro inválido ou termos não aceitos."}},{status:422});
   const v=parsed.data;
