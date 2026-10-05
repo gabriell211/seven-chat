@@ -3,12 +3,13 @@ import { eq, or } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { oauthAccounts, profiles, userConsents, users } from "@/db/schema";
 import { clearOAuthPending, createSession, getOAuthPending, hashPassword } from "@/lib/auth";
+import { isAllowedRegistrationEmail } from "@/lib/email-policy";
+import { isTransactionalEmailConfigured } from "@/lib/email";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { LEGAL_VERSION, PRIVACY_DOCUMENT, TERMS_DOCUMENT } from "@/lib/legal";
-import { ensureUsersUsernameColumn } from "@/lib/schema-compat";
+import { ensureAuthSchemaCompatibility } from "@/lib/schema-compat";
 import { oauthRegisterSchema, registerSchema } from "@/lib/validation";
 import { issueEmailVerification } from "@/services/auth-challenges";
-import { isAllowedRegistrationEmail } from "@/lib/email-policy";
 
 export async function POST(req:Request){
   const rate=await checkRateLimit(req,"auth");
@@ -21,7 +22,7 @@ export async function POST(req:Request){
   const oauth=await getOAuthPending();
 
   try{
-    await ensureUsersUsernameColumn();
+    await ensureAuthSchemaCompatibility();
 
     if(oauth){
       const parsed=oauthRegisterSchema.safeParse(form);
@@ -68,13 +69,15 @@ export async function POST(req:Request){
 
     if(exists.length)return NextResponse.redirect(new URL("/register?error=exists",req.url),303);
 
+    const pendingVerification=isTransactionalEmailConfigured();
+
     const user=await db.transaction(async tx=>{
       const [created]=await tx.insert(users).values({
         email:v.email,
         username:v.username,
         passwordHash:hashPassword(v.password),
         birthDate:v.birthDate,
-        status:"pending_verification"
+        status:pendingVerification?"pending_verification":"active"
       }).returning({id:users.id,username:users.username});
 
       await tx.insert(profiles).values({userId:created.id,displayName:v.displayName});
@@ -86,11 +89,17 @@ export async function POST(req:Request){
       return created;
     });
 
-    try{
-      await issueEmailVerification({id:user.id,email:v.email,username:user.username});
-    }catch{}
+    if(pendingVerification){
+      try{
+        await issueEmailVerification({id:user.id,email:v.email,username:user.username});
+      }catch(error){
+        if(process.env.NODE_ENV!=="production")console.error("verification email failed",error);
+      }
+      return NextResponse.redirect(new URL("/verify-email?pending=1&email="+encodeURIComponent(v.email),req.url),303);
+    }
 
-    return NextResponse.redirect(new URL("/verify-email?pending=1&email="+encodeURIComponent(v.email),req.url),303);
+    await createSession({userId:user.id,username:user.username},{userAgent:req.headers.get("user-agent")});
+    return NextResponse.redirect(new URL("/",req.url),303);
   }catch(error){
     if((error as {code?:string}).code==="23505"){
       return NextResponse.redirect(new URL("/register?error=exists",req.url),303);

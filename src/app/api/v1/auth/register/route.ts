@@ -5,9 +5,10 @@ import { db } from "@/lib/db";
 import { profiles, userConsents, users } from "@/db/schema";
 import { hashPassword } from "@/lib/auth";
 import { isAllowedRegistrationEmail } from "@/lib/email-policy";
+import { isTransactionalEmailConfigured } from "@/lib/email";
 import { LEGAL_VERSION, PRIVACY_DOCUMENT, TERMS_DOCUMENT } from "@/lib/legal";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { ensureUsersUsernameColumn } from "@/lib/schema-compat";
+import { ensureAuthSchemaCompatibility } from "@/lib/schema-compat";
 import { registerSchema } from "@/lib/validation";
 import { issueEmailVerification } from "@/services/auth-challenges";
 
@@ -42,7 +43,7 @@ export async function POST(req:Request){
   }
 
   try{
-    await ensureUsersUsernameColumn();
+    await ensureAuthSchemaCompatibility();
 
     const exists=await db.select({id:users.id}).from(users)
       .where(or(eq(users.email,v.email),eq(users.username,v.username)))
@@ -52,13 +53,15 @@ export async function POST(req:Request){
       return NextResponse.json({error:{code:"ACCOUNT_EXISTS",message:"E-mail ou usuário já cadastrado."}},{status:409});
     }
 
+    const pendingVerification=isTransactionalEmailConfigured();
+
     const user=await db.transaction(async tx=>{
       const [created]=await tx.insert(users).values({
         email:v.email,
         username:v.username,
         passwordHash:hashPassword(v.password),
         birthDate:v.birthDate,
-        status:"pending_verification"
+        status:pendingVerification?"pending_verification":"active"
       }).returning({id:users.id,email:users.email,username:users.username});
 
       await tx.insert(profiles).values({userId:created.id,displayName:v.displayName});
@@ -70,14 +73,16 @@ export async function POST(req:Request){
       return created;
     });
 
-    try{
-      await issueEmailVerification(user);
-    }catch(error){
-      if(process.env.NODE_ENV!=="production")console.error("verification email failed",error);
+    if(pendingVerification){
+      try{
+        await issueEmailVerification(user);
+      }catch(error){
+        if(process.env.NODE_ENV!=="production")console.error("verification email failed",error);
+      }
     }
 
     return NextResponse.json(
-      {data:{userId:user.id,pendingVerification:true,email:user.email}},
+      {data:{userId:user.id,pendingVerification,email:user.email}},
       {status:201}
     );
   }catch(error){
