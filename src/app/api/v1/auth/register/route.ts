@@ -21,7 +21,18 @@ export async function POST(req:Request){
     );
   }
   const parsed=schema.safeParse(await req.json().catch(()=>null));
-  if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Cadastro inválido ou termos não aceitos."}},{status:422});
+  if(!parsed.success){
+    const issue=parsed.error.issues[0];
+    const field=issue?.path?.[0];
+    const labels:Record<string,string>={
+      displayName:"Nome",username:"Usuário",email:"E-mail",birthDate:"Data de nascimento",password:"Senha",termsAccepted:"Termos"
+    };
+    const prefix=typeof field==="string"&&labels[field]?labels[field]+": ":"";
+    return NextResponse.json(
+      {error:{code:"VALIDATION_ERROR",message:prefix+(issue?.message??"Dados inválidos."),field:typeof field==="string"?field:undefined}},
+      {status:422}
+    );
+  }
   const v=parsed.data;
   if(!isAllowedRegistrationEmail(v.email))return NextResponse.json({error:{code:"DISPOSABLE_EMAIL",message:"Use um e-mail permanente."}},{status:422});
   const exists=await db.select({id:users.id}).from(users).where(or(eq(users.email,v.email),eq(users.username,v.username))).limit(1);
