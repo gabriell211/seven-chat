@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {eq} from "drizzle-orm";import {users} from "@/db/schema";import {db} from "@/lib/db";import {getRequestSession,revokeAllDeviceSessions} from "@/lib/auth";
+export async function POST(req:Request){const s=await getRequestSession(req);if(!s)return NextResponse.json({error:{code:"UNAUTHORIZED"}},{status:401});await db.update(users).set({status:"deactivated",updatedAt:new Date()}).where(eq(users.id,s.userId));await revokeAllDeviceSessions(s.userId);return NextResponse.json({data:{deactivated:true}});}
