@@ -12,7 +12,7 @@ const schema=z.object({
   password:z.string().min(1).max(128),
   deviceName:z.string().min(1).max(120).default("Seven Chat Mobile"),
   platform:z.enum(["android","ios","web"]).default("android"),
-  totpCode:z.string().regex(/^\\d{6}$/).optional()
+  totpCode:z.string().regex(/^\d{6}$/).optional()
 });
 
 export async function POST(req:Request){
