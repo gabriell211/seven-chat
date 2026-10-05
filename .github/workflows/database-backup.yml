@@ -8,7 +8,6 @@ permissions:
 jobs:
   backup:
     runs-on: ubuntu-latest
-    if: ${{ secrets.BACKUP_DATABASE_URL != '' }}
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update && sudo apt-get install -y postgresql-client
