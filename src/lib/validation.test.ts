@@ -1,18 +1,34 @@
 import { describe, expect, it } from "vitest";
 import { messageSchema, registerSchema } from "./validation";
 
+function validRegistration(overrides:Record<string,unknown>={}){
+  const year=new Date().getUTCFullYear()-20;
+  return {
+    email:"a@b.com",
+    username:"gabriel_7",
+    displayName:"Gabriel",
+    password:"1234567890",
+    birthDate:year+"-01-01",
+    ...overrides
+  };
+}
+
 describe("registerSchema", () => {
-  it("accepts valid age", () => {
-    const year = new Date().getUTCFullYear() - 20;
-    expect(registerSchema.safeParse({ email:"a@b.com", username:"gabriel_7", displayName:"Gabriel", password:"1234567890x", birthDate: year + "-01-01" }).success).toBe(true);
+  it("accepts valid age and a 10-character password", () => {
+    expect(registerSchema.safeParse(validRegistration()).success).toBe(true);
+  });
+  it("rejects a 9-character password", () => {
+    const parsed=registerSchema.safeParse(validRegistration({password:"123456789"}));
+    expect(parsed.success).toBe(false);
+    if(!parsed.success)expect(parsed.error.issues[0]?.path).toContain("password");
   });
   it("rejects under 13", () => {
-    const year = new Date().getUTCFullYear() - 10;
-    expect(registerSchema.safeParse({ email:"a@b.com", username:"gabriel_7", displayName:"Gabriel", password:"1234567890x", birthDate: year + "-01-01" }).success).toBe(false);
+    const year=new Date().getUTCFullYear()-10;
+    expect(registerSchema.safeParse(validRegistration({birthDate:year+"-01-01"})).success).toBe(false);
   });
   it("rejects over 99", () => {
-    const year = new Date().getUTCFullYear() - 100;
-    expect(registerSchema.safeParse({ email:"a@b.com", username:"gabriel_7", displayName:"Gabriel", password:"1234567890x", birthDate: year + "-01-01" }).success).toBe(false);
+    const year=new Date().getUTCFullYear()-100;
+    expect(registerSchema.safeParse(validRegistration({birthDate:year+"-01-01"})).success).toBe(false);
   });
 });
 
