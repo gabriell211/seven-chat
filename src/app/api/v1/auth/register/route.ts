@@ -73,11 +73,21 @@ export async function POST(req:Request){
     try{
       await issueEmailVerification(user);
     }catch(error){
-      if(process.env.NODE_ENV!=="production")console.error("verification email failed",error);
+      console.error("verification email failed",error);
+      return NextResponse.json(
+        {
+          error:{
+            code:"EMAIL_DELIVERY_FAILED",
+            message:"Conta criada, mas não foi possível enviar o e-mail de confirmação. Tente reenviar em instantes."
+          },
+          data:{userId:user.id,pendingVerification:true,email:user.email}
+        },
+        {status:503}
+      );
     }
 
     return NextResponse.json(
-      {data:{userId:user.id,pendingVerification:true,email:user.email}},
+      {data:{userId:user.id,pendingVerification:true,email:user.email,emailDelivery:"sent"}},
       {status:201}
     );
   }catch(error){
