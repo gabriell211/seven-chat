@@ -647,3 +647,21 @@ export const liveBattles = pgTable("live_battles", {
   index("live_battles_live_a_idx").on(t.liveAId, t.createdAt),
   index("live_battles_live_b_idx").on(t.liveBId, t.createdAt)
 ]);
+
+
+export const accountSecurity = pgTable("account_security", {
+  userId: uuid("user_id").primaryKey().references(() => users.id, { onDelete: "cascade" }),
+  totpSecret: text("totp_secret"),
+  totpEnabledAt: timestamp("totp_enabled_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+});
+
+export const webauthnCredentials = pgTable("webauthn_credentials", {
+  id: text("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  publicKey: text("public_key").notNull(),
+  counter: integer("counter").notNull().default(0),
+  transports: text("transports").array().notNull().default([]),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true })
+}, (t) => [index("webauthn_user_idx").on(t.userId)]);
