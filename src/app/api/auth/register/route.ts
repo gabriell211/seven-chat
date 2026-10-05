@@ -88,9 +88,15 @@ export async function POST(req:Request){
 
     try{
       await issueEmailVerification({id:user.id,email:v.email,username:user.username});
-    }catch{}
+    }catch(error){
+      console.error("verification email failed",error);
+      return NextResponse.redirect(
+        new URL("/verify-email?pending=1&delivery=failed&email="+encodeURIComponent(v.email),req.url),
+        303
+      );
+    }
 
-    return NextResponse.redirect(new URL("/verify-email?pending=1&email="+encodeURIComponent(v.email),req.url),303);
+    return NextResponse.redirect(new URL("/verify-email?pending=1&delivery=sent&email="+encodeURIComponent(v.email),req.url),303);
   }catch(error){
     if((error as {code?:string}).code==="23505"){
       return NextResponse.redirect(new URL("/register?error=exists",req.url),303);
