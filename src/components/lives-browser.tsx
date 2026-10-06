@@ -27,6 +27,7 @@ export function LivesBrowser({lives,loggedIn}:{lives:Live[];loggedIn:boolean}){
       router.refresh();setActive(body.data.id);
     }catch(e){setError(e instanceof Error?e.message:"Falha ao iniciar live.");}
   };
+
   const end=async(id:string)=>{
     const response=await fetch("/api/v1/lives/"+id+"/end",{method:"POST"});
     if(response.ok){setActive(null);router.refresh();}
@@ -34,20 +35,24 @@ export function LivesBrowser({lives,loggedIn}:{lives:Live[];loggedIn:boolean}){
 
   return <div className="grid two">
     <section className="grid">
-      {lives.length===0?<div className="card empty">Nenhuma live ao vivo neste momento.</div>:lives.map(live=><article className="card stack" key={live.id}>
-        <div className="posthead"><div><h3 style={{margin:0}}>{live.title}</h3><div className="muted">{live.hostDisplayName} · @{live.hostUsername}</div></div><span className="pill">AO VIVO · {live.viewerCount}</span></div>
-        {live.category&&<span className="pill">{live.category}</span>}
-        {active===live.id?<RtcExperience resourceType="live" resourceId={live.id} mode="video" canPublishLocal={live.isHost}/>:<button className="button secondary" disabled={!loggedIn} onClick={()=>setActive(live.id)}>{loggedIn?(live.isHost?"Abrir estúdio":"Assistir"):"Entre para assistir"}</button>}
-        {live.isHost&&<button className="button secondary" onClick={()=>void end(live.id)}>Encerrar live</button>}
+      {lives.length===0?<div className="card empty"><div><div className="empty-icon">◉</div><strong>Ninguém está ao vivo agora.</strong><p>Você pode iniciar uma transmissão ou voltar mais tarde para descobrir novas lives.</p></div></div>:lives.map(live=><article className="card stack" key={live.id}>
+        <div className="posthead">
+          <div className="userrow"><div className="avatar sm">{live.hostDisplayName[0]?.toUpperCase()}</div><div><h3 style={{margin:0}}>{live.title}</h3><div className="muted" style={{fontSize:12}}>{live.hostDisplayName} · @{live.hostUsername}</div></div></div>
+          <span className="live-chip">{live.viewerCount} assistindo</span>
+        </div>
+        <div className="row" style={{flexWrap:"wrap",gap:7}}>{live.category&&<span className="pill">{live.category}</span>}<span className="pill">Pico {live.peakViewers}</span></div>
+        {active===live.id?<RtcExperience resourceType="live" resourceId={live.id} mode="video" canPublishLocal={live.isHost}/>:<button className="button secondary" disabled={!loggedIn} onClick={()=>setActive(live.id)}>{loggedIn?(live.isHost?"Abrir estúdio":"Assistir live"):"Entre para assistir"}</button>}
+        {live.isHost&&<button className="button ghost" onClick={()=>void end(live.id)}>Encerrar transmissão</button>}
       </article>)}
     </section>
+
     <aside className="card stack">
-      <div><h3 style={{marginTop:0}}>Iniciar live</h3><p className="muted">Vídeo via RTC dedicado, com suporte a convidados e gifts.</p></div>
+      <div><span className="eyebrow">TRANSMITIR</span><h3 style={{marginBottom:7}}>Comece uma live</h3><p className="muted" style={{marginTop:0}}>Vídeo em RTC dedicado com suporte a convidados, gifts e batalhas.</p></div>
       {error&&<div className="error" role="alert">{error}</div>}
       <form action={create} className="stack">
-        <input className="input" name="title" minLength={3} maxLength={120} placeholder="Título" required disabled={!loggedIn}/>
-        <input className="input" name="category" maxLength={50} placeholder="Categoria" disabled={!loggedIn}/>
-        <button className="button" disabled={!loggedIn}>Entrar ao vivo</button>
+        <label className="field"><span>Título</span><input className="input" name="title" minLength={3} maxLength={120} placeholder="Dê um título à sua transmissão" required disabled={!loggedIn}/></label>
+        <label className="field"><span>Categoria</span><input className="input" name="category" maxLength={50} placeholder="Ex.: conversa, música, games" disabled={!loggedIn}/></label>
+        <button className="button full" disabled={!loggedIn}>{loggedIn?"Entrar ao vivo":"Entre para transmitir"}</button>
       </form>
     </aside>
   </div>;
