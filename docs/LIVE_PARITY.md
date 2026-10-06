@@ -62,9 +62,9 @@ Objetivo: usar a experiência do TikTok LIVE como referência funcional e de flu
 | Mega Fã via diamantes | ✅ |
 | Likes rápidos/contador de likes | 🔴 |
 | Gift animation full-screen | 🟡 |
-| Ranking de contribuidores | 🔴 |
-| Badge persistente de Mega Fã nos comentários | 🔴 |
-| Entrada destacada de Mega Fã | 🔴 |
+| Ranking de contribuidores | ✅ |
+| Badge persistente de Mega Fã nos comentários | ✅ |
+| Entrada destacada de Mega Fã | ✅ |
 
 ## 4. Palco — host
 
@@ -161,7 +161,7 @@ Objetivo: usar a experiência do TikTok LIVE como referência funcional e de flu
 | Animação 3D quando asset permitir | 🟡 |
 | Gift combo | 🔴 |
 | Gift box / caixa de presentes | 🔴 |
-| Ranking de presenteadores | 🔴 |
+| Ranking de presenteadores | ✅ |
 | Resumo financeiro pós-LIVE | 🔴 |
 
 ## 9. Mega Fã / Fan Club
