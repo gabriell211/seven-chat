@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LiveStage, type LiveGift, type LiveItem, type LiveSuggestedUser } from "@/components/live-stage";
+import { LiveStage, type LiveFanProduct, type LiveGift, type LiveItem, type LiveSuggestedUser } from "@/components/live-stage";
 
 export function LivesBrowser({
-  lives,gifts,suggestedUsers,loggedIn,currentUserId,initialLiveId
+  lives,gifts,fanProducts,suggestedUsers,loggedIn,currentUserId,initialLiveId
 }:{
   lives:LiveItem[];
   gifts:LiveGift[];
