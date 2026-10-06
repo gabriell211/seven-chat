@@ -336,6 +336,21 @@ export function LiveStage({
     }
   };
 
+  const blockHost=async()=>{
+    if(live.isHost)return;
+    if(!window.confirm(`Bloquear ${live.hostDisplayName}? Você deixará de seguir o perfil e esta LIVE será fechada.`))return;
+    try{
+      setBusy("block");
+      await api(`/api/v1/users/${live.hostId}/block`,{method:"POST",body:"{}"});
+      onEnded(live.id);
+      onClose();
+    }catch(e){
+      flash("error",e instanceof Error?e.message:"Não foi possível bloquear este criador.");
+    }finally{
+      setBusy("");
+    }
+  };
+
   const share=async()=>{
     const url=window.location.origin+`/lives?live=${live.id}`;
 
@@ -920,6 +935,7 @@ export function LiveStage({
           {!live.isHost&&<>
             {fanProducts.length>0&&<button className="button secondary full" onClick={()=>setSheet("fans")}>Virar Mega Fã</button>}
             <button className="button secondary full" onClick={onClose}>Sair da LIVE</button>
+            <button className="button live-end full" onClick={()=>void blockHost()} disabled={busy==="block"}>Bloquear criador</button>
           </>}
         </div>}
       </section>
