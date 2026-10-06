@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { LivesBrowser } from "@/components/lives-browser";
-import { gifts, liveSessions, profiles, users } from "@/db/schema";
+import { fanProducts, gifts, liveSessions, profiles, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -12,7 +12,7 @@ export default async function Lives({searchParams}:{searchParams:Promise<Record<
   const params=await searchParams;
   const requestedLive=typeof params.live==="string"?params.live:null;
 
-  const [rows,giftRows,people]=process.env.DATABASE_URL?await Promise.all([
+  const [rows,giftRows,people,fanRows]=process.env.DATABASE_URL?await Promise.all([
     db.select({
       id:liveSessions.id,title:liveSessions.title,category:liveSessions.category,
       viewerCount:liveSessions.viewerCount,peakViewers:liveSessions.peakViewers,
