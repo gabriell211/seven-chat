@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ControlBar, LiveKitRoom, RoomAudioRenderer, VideoConference
+  ControlBar, LiveKitRoom, RoomAudioRenderer, VideoConference, useParticipants
 } from "@livekit/components-react";
 
 type ResourceType="room"|"live"|"call";
@@ -14,10 +14,23 @@ async function request<T>(url:string,init:RequestInit={}):Promise<T>{
   return body as T;
 }
 
+function ParticipantObserver({onCount}:{onCount?:(count:number)=>void}){
+  const participants=useParticipants();
+  useEffect(()=>{onCount?.(participants.length);},[participants.length,onCount]);
+  return null;
+}
+
 export function RtcExperience({
-  resourceType,resourceId,mode,canPublishLocal=false,password
+  resourceType,resourceId,mode,canPublishLocal=false,password,variant="default",layout="grid",onParticipantCount
 }:{
-  resourceType:ResourceType;resourceId:string;mode:"audio"|"video";canPublishLocal?:boolean;password?:string;
+  resourceType:ResourceType;
+  resourceId:string;
+  mode:"audio"|"video";
+  canPublishLocal?:boolean;
+  password?:string;
+  variant?:"default"|"live";
+  layout?:"grid"|"focus";
+  onParticipantCount?:(count:number)=>void;
 }){
   const [connection,setConnection]=useState<{token:string;url:string}|null>(null);
   const [error,setError]=useState("");
@@ -37,14 +50,14 @@ export function RtcExperience({
     finally{setLoading(false);}
   };
 
-  if(!connection)return <div className="stack">
+  if(!connection)return <div className={variant==="live"?"rtc-live-connect":"stack"}>
     {error&&<div className="error" role="alert">{error}</div>}
     <button className="button" onClick={()=>void connect()} disabled={loading}>
-      {loading?"Conectando…":mode==="audio"?"Entrar na sala":"Assistir / entrar"}
+      {loading?"Conectando…":mode==="audio"?"Entrar na sala":canPublishLocal?"Entrar no estúdio":"Assistir LIVE"}
     </button>
   </div>;
 
-  return <div className="rtc-shell" data-lk-theme="default">
+  return <div className={"rtc-shell "+(variant==="live"?"rtc-shell-live rtc-live-"+layout:"")} data-lk-theme="default">
     <LiveKitRoom
       token={connection.token}
       serverUrl={connection.url}
@@ -53,7 +66,11 @@ export function RtcExperience({
       video={mode==="video"&&canPublishLocal}
       onDisconnected={()=>setConnection(null)}
     >
-      {mode==="video"?<VideoConference/>:<>
+      <ParticipantObserver onCount={onParticipantCount}/>
+      {mode==="video"?<>
+        <RoomAudioRenderer/>
+        <VideoConference/>
+      </>:<>
         <RoomAudioRenderer/>
         <div className="rtc-audio-state">
           <strong>Conectado à sala</strong>
