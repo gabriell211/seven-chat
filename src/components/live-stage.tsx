@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";\nimport type { FormEvent } from "react";
 import { RtcExperience } from "@/components/rtc-experience";
 
 export type LiveItem={
@@ -70,7 +70,7 @@ export function LiveStage({
   const [followed,setFollowed]=useState(false);
   const [layout,setLayout]=useState<"grid"|"focus">("grid");
   const [battleClock,setBattleClock]=useState("");
-  const canPublish=live.isHost||guestState.me?.status==="accepted";
+  const canPublish=live.isHost||guestState.me?.status==="accepted";\n\n  useEffect(()=>{\n    const previous=document.body.style.overflow;\n    document.body.style.overflow="hidden";\n    return()=>{document.body.style.overflow=previous;};\n  },[]);
 
   const loadComments=useCallback(async()=>{
     const body=await api<{data<Comment[]>}>(`/api/v1/lives/${live.id}/comments`);
