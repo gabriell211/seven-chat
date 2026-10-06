@@ -50,7 +50,7 @@ export function RtcExperience({
     finally{setLoading(false);}
   };
 
-  if(!connection)return <div className={variant==="live"?"rtc-live-connect":"stack"}>
+  useEffect(()=>{\n    if(variant==="live"&&!connection)void connect();\n    // resourceId intentionally controls automatic reconnection for the immersive LIVE stage.\n    // eslint-disable-next-line react-hooks/exhaustive-deps\n  },[variant,resourceId]);\n\n  if(!connection)return <div className={variant==="live"?"rtc-live-connect":"stack"}>
     {error&&<div className="error" role="alert">{error}</div>}
     <button className="button" onClick={()=>void connect()} disabled={loading}>
       {loading?"Conectando…":mode==="audio"?"Entrar na sala":canPublishLocal?"Entrar no estúdio":"Assistir LIVE"}
