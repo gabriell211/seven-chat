@@ -19,10 +19,10 @@ Objetivo: usar a experiência do TikTok LIVE como referência funcional e de flu
 | Card com host, título, categoria e público | ✅ |
 | Abrir LIVE em experiência imersiva | ✅ |
 | Deep link /lives?live=<id> | ✅ |
-| Filtros visuais de descoberta | 🟡 |
-| Ranking real por popularidade | 🔴 |
+| Filtros reais de descoberta (seguindo/populares/categorias) | ✅ |
+| Ranking real por popularidade | ✅ |
 | Recomendação personalizada | 🔴 |
-| Seguindo / recomendadas com ranking real | 🔴 |
+| Filtro Seguindo real | ✅ |\n| Recomendação personalizada | 🔴 |
 
 ## 2. Pré-LIVE do criador
 
@@ -236,3 +236,28 @@ Objetivo: usar a experiência do TikTok LIVE como referência funcional e de flu
 8. Resumo pós-LIVE.
 9. Recording/replay + clips.
 10. Levar a mesma experiência para o app mobile.
+
+
+## Infraestrutura obrigatória para produção
+
+O código da experiência LIVE está integrado, mas o ambiente Vercel atual ainda não possui as variáveis externas abaixo:
+
+- `LIVEKIT_API_KEY`
+- `LIVEKIT_API_SECRET`
+- `LIVEKIT_URL`
+- `NEXT_PUBLIC_REALTIME_URL`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+Sem LiveKit configurado, o backend não consegue emitir tokens RTC utilizáveis.
+Sem o serviço realtime, a UI usa polling como fallback, mas não recebe os eventos instantaneamente.
+Sem Redis REST compatível com Upstash, as rotas que usam `enforceRateLimit` retornam 503 em produção por design de segurança.
+
+### Opção de infraestrutura já verificada
+
+Railway possui:
+- template LiveKit com media server + Redis + Egress + bucket para recordings;
+- template Serverless Redis com REST API compatível com `@upstash/redis`.
+
+Esses recursos não foram provisionados automaticamente porque criam infraestrutura externa com custo potencial.
+
