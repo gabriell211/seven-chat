@@ -572,17 +572,32 @@ export function LiveStage({
     :"00:00:00";
 
   return <div className="live-room">
-    <div className="live-media">
-      <RtcExperience
-        key={canPublish?"publisher":"viewer"}
-        resourceType="live"
-        resourceId={live.id}
-        mode="video"
-        canPublishLocal={canPublish}
-        variant="live"
-        layout={layout}
-        onParticipantCount={setParticipantCount}
-      />
+    <div className={"live-media "+(battle?.status==="active"&&opponent?"is-battle":"")}>
+      <div className="live-battle-media-side live-battle-own">
+        <RtcExperience
+          key={canPublish?"publisher":"viewer"}
+          resourceType="live"
+          resourceId={live.id}
+          mode="video"
+          canPublishLocal={canPublish}
+          variant="live"
+          layout={layout}
+          onParticipantCount={setParticipantCount}
+        />
+        {battle?.status==="active"&&opponent&&<div className="live-battle-media-label">{live.hostDisplayName}</div>}
+      </div>
+      {battle?.status==="active"&&opponent&&<div className="live-battle-media-side live-battle-opponent">
+        <RtcExperience
+          key={"battle-opponent-"+opponent.id}
+          resourceType="live"
+          resourceId={opponent.id}
+          mode="video"
+          canPublishLocal={false}
+          variant="live"
+          layout="focus"
+        />
+        <div className="live-battle-media-label">{opponent.displayName}</div>
+      </div>}
     </div>
 
     <div className="live-shade"/>
