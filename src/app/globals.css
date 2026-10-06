@@ -522,3 +522,24 @@ a,button{-webkit-tap-highlight-color:transparent}
   .live-comment{max-width:88%}.live-comment p{font-size:10px}
   .live-gift-grid{grid-template-columns:repeat(3,1fr)}
 }
+
+
+/* Seven LIVE — fan club and feedback */
+.live-fan-tag{
+  display:inline-flex;align-items:center;padding:5px 7px;border-radius:999px;
+  background:linear-gradient(135deg,#f59e0b,#ec4899);color:#fff;
+  font-size:8px;font-weight:950;letter-spacing:.08em;white-space:nowrap
+}
+.live-fan-products{display:grid;gap:8px}
+.live-fan-products button{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  width:100%;padding:13px 14px;border:1px solid var(--border);
+  border-radius:14px;background:rgba(255,255,255,.025);color:#fff;cursor:pointer
+}
+.live-fan-products button:hover{border-color:rgba(192,132,252,.36);background:rgba(139,92,246,.08)}
+.live-fan-products button>div{display:grid;gap:3px;text-align:left}
+.live-fan-products strong{text-transform:capitalize;font-size:12px}
+.live-fan-products span{font-size:10px;color:var(--muted)}
+.live-fan-products b{font-size:12px;color:#e1c8ff}
+.live-toast.is-success{border-color:rgba(52,211,153,.24);color:#b8f7dc}
+.live-toast.is-error{border-color:rgba(251,113,133,.25);color:#ffc0ca}
