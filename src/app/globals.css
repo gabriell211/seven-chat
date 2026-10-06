@@ -610,3 +610,19 @@ a,button{-webkit-tap-highlight-color:transparent}
 .live-ranking-item>div{display:grid;gap:2px;min-width:0}.live-ranking-item strong{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.live-ranking-item small{font-size:9px;color:var(--muted)}
 .live-ranking-item>b{font-size:11px;color:#dcc4ff;white-space:nowrap}
 @media(max-width:700px){.live-fan-spotlight{left:10px;top:94px}.live-ranking-item{grid-template-columns:26px 32px minmax(0,1fr) auto}}
+
+
+/* Seven LIVE — battle split screen */
+.live-media.is-battle{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#050407}
+.live-battle-media-side{position:relative;min-width:0;min-height:0;overflow:hidden;background:#08060b}
+.live-battle-media-side>.rtc-shell-live{position:absolute;inset:0}
+.live-battle-media-label{
+  position:absolute;z-index:7;left:10px;top:136px;padding:5px 8px;border-radius:999px;
+  background:rgba(0,0,0,.38);backdrop-filter:blur(10px);font-size:9px;font-weight:900
+}
+.live-battle-opponent .lk-control-bar{display:none!important}
+.live-battle-opponent .lk-grid-layout>.lk-participant-tile:not(:first-child){display:none!important}
+@media(max-width:700px){
+  .live-media.is-battle{grid-template-columns:1fr 1fr}
+  .live-battle-media-label{top:118px;left:6px;font-size:8px}
+}
