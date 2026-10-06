@@ -17,7 +17,7 @@ export type LiveItem={
 };
 
 export type LiveGift={id:string;name:string;priceDiamonds:number;category:string;animationType:string};
-export type LiveSuggestedUser={id:string;username:string;displayName:string;avatarUrl:string|null};
+export type LiveSuggestedUser={id:string;username:string;displayName:string;avatarUrl:string|null};\nexport type LiveFanProduct={code:string;tier:string;durationDays:number;priceDiamonds:number};
 
 type Comment={
   id:string;body:string;pinned:boolean;createdAt:string;authorId:string;username:string;displayName:string;
@@ -49,7 +49,7 @@ function remaining(endsAt:string|null){
 }
 
 export function LiveStage({
-  live,lives,gifts,suggestedUsers,currentUserId,onClose,onEnded
+  live,lives,gifts,fanProducts,suggestedUsers,currentUserId,onClose,onEnded
 }:{
   live:LiveItem;
   lives:LiveItem[];
