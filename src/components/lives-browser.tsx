@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LiveStage, type LiveGift, type LiveItem, type LiveSuggestedUser } from "@/components/live-stage";
 
@@ -19,7 +19,7 @@ export function LivesBrowser({
   const [creatorOpen,setCreatorOpen]=useState(false);
   const [error,setError]=useState("");
   const [creating,setCreating]=useState(false);
-  const [localLives,setLocalLives]=useState(lives);
+  const [localLives,setLocalLives]=useState(lives);\n\n  useEffect(()=>{\n    setLocalLives(lives);\n    if(initialLiveId&&lives.some(v=>v.id===initialLiveId))setActiveId(initialLiveId);\n  },[initialLiveId,lives]);
 
   const active=useMemo(()=>localLives.find(v=>v.id===activeId)??null,[activeId,localLives]);
 
