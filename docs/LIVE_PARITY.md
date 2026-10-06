@@ -186,10 +186,10 @@ Objetivo: usar a experiência do TikTok LIVE como referência funcional e de flu
 | Status ended | ✅ |
 | endedAt | ✅ |
 | Pico de espectadores | ⚙️ campo existe |
-| Resumo pós-LIVE | 🔴 |
-| Total de comentários | 🔴 |
-| Total de gifts/diamantes | 🔴 |
-| Novos seguidores | 🔴 |
+| Resumo pós-LIVE | ✅ |
+| Total de comentários | ✅ |
+| Total de gifts/diamantes | ✅ |
+| Novos seguidores | ✅ |
 | Replay/recording | 🔴 |
 | Download replay | 🔴 |
 | Criar clipe de replay | 🔴 |
