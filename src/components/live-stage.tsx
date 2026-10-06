@@ -102,6 +102,20 @@ type Battle={
 
 type Sheet="none"|"gifts"|"guests"|"battle"|"fans"|"moderators"|"more";
 
+type LiveSummary={
+  id:string;
+  title:string;
+  category:string|null;
+  durationSeconds:number;
+  peakViewers:number;
+  viewerCount:number;
+  comments:number;
+  giftTransactions:number;
+  giftQuantity:number;
+  diamonds:number;
+  newFollowers:number;
+};
+
 async function api<T>(url:string,init:RequestInit={}):Promise<T>{
   const response=await fetch(url,{
     ...init,
@@ -148,6 +162,7 @@ export function LiveStage({
   const [fanJoined,setFanJoined]=useState(false);
   const [layout,setLayout]=useState<"grid"|"focus">("grid");
   const [battleClock,setBattleClock]=useState("");
+  const [summary,setSummary]=useState<LiveSummary|null>(null);
 
   const canPublish=live.isHost||guestState.me?.status==="accepted";
   const canModerate=live.isHost||moderatorState.isModerator;
@@ -176,6 +191,11 @@ export function LiveStage({
   const loadBattle=useCallback(async()=>{
     const body=await api<{data:Battle|null}>(`/api/v1/lives/${live.id}/battles`);
     setBattle(body.data);
+  },[live.id]);
+
+  const loadSummary=useCallback(async()=>{
+    const body=await api<{data:LiveSummary}>(`/api/v1/lives/${live.id}/summary`);
+    setSummary(body.data);
   },[live.id]);
 
   const refresh=useCallback(async()=>{
@@ -221,8 +241,11 @@ export function LiveStage({
             if(payload.event?.startsWith("live.battle"))void loadBattle();
             if(payload.event?.startsWith("live.moderation"))void loadComments();
             if(payload.event==="live.ended"){
-              onEnded(live.id);
-              onClose();
+              if(live.isHost)void loadSummary();
+              else{
+                onEnded(live.id);
+                onClose();
+              }
             }
           }catch{}
         });
@@ -233,7 +256,7 @@ export function LiveStage({
       closed=true;
       socket?.close();
     };
-  },[live.id,loadBattle,loadComments,loadGuests,onClose,onEnded]);
+  },[live.id,live.isHost,loadBattle,loadComments,loadGuests,loadSummary,onClose,onEnded]);
 
   const flash=(kind:"error"|"success",text:string)=>{
     setMessage({kind,text});
@@ -474,8 +497,7 @@ export function LiveStage({
     try{
       setBusy("end");
       await api(`/api/v1/lives/${live.id}/end`,{method:"POST",body:"{}"});
-      onEnded(live.id);
-      onClose();
+      await loadSummary();
     }catch(e){
       flash("error",e instanceof Error?e.message:"Não foi possível encerrar a LIVE.");
     }finally{
@@ -491,6 +513,9 @@ export function LiveStage({
   const opponent=battle?.lives.find(v=>v.id!==(battleSide==="A"?battle.liveAId:battle.liveBId));
   const pinned=comments.find(v=>v.pinned);
   const visibleComments=comments.slice(-9);
+  const summaryDuration=summary
+    ?`${Math.floor(summary.durationSeconds/3600).toString().padStart(2,"0")}:${Math.floor((summary.durationSeconds%3600)/60).toString().padStart(2,"0")}:${(summary.durationSeconds%60).toString().padStart(2,"0")}`
+    :"00:00:00";
 
   return <div className="live-room">
     <div className="live-media">
@@ -625,7 +650,35 @@ export function LiveStage({
       <button type="submit" disabled={!comment.trim()||busy==="comment"}>Enviar</button>
     </form>
 
-    {sheet!=="none"&&<div className="live-sheet-backdrop" onClick={()=>setSheet("none")}>
+    {summary&&<div className="live-summary-backdrop">
+      <section className="live-summary">
+        <div className="live-summary-mark">✓</div>
+        <span className="eyebrow">LIVE ENCERRADA</span>
+        <h2>Resumo da transmissão</h2>
+        <p>{summary.title}</p>
+
+        <div className="live-summary-grid">
+          <div><span>Duração</span><strong>{summaryDuration}</strong></div>
+          <div><span>Pico ao vivo</span><strong>{summary.peakViewers}</strong></div>
+          <div><span>Comentários</span><strong>{summary.comments}</strong></div>
+          <div><span>Presentes</span><strong>{summary.giftQuantity}</strong></div>
+          <div><span>Diamantes</span><strong>◇ {summary.diamonds}</strong></div>
+          <div><span>Novos seguidores</span><strong>+{summary.newFollowers}</strong></div>
+        </div>
+
+        <div className="live-summary-note">
+          <strong>{summary.giftTransactions} transações de presentes</strong>
+          <span>Os números são calculados diretamente dos registros da LIVE.</span>
+        </div>
+
+        <button className="button full" onClick={()=>{
+          onEnded(live.id);
+          onClose();
+        }}>Voltar para as LIVEs</button>
+      </section>
+    </div>}
+
+    {sheet!=="none"&&!summary&&<div className="live-sheet-backdrop" onClick={()=>setSheet("none")}>
       <section className="live-sheet" onClick={e=>e.stopPropagation()}>
         <div className="live-sheet-head">
           <div>
