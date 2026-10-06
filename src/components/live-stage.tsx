@@ -48,6 +48,17 @@ type Comment={
   authorId:string;
   username:string;
   displayName:string;
+  isMegaFan:boolean;
+};
+
+type RankingEntry={
+  position:number;
+  userId:string;
+  username:string;
+  displayName:string;
+  giftQuantity:number;
+  diamonds:number;
+  transactions:number;
 };
 
 type Guest={
@@ -101,7 +112,7 @@ type Battle={
   lives:BattleLive[];
 };
 
-type Sheet="none"|"gifts"|"guests"|"battle"|"fans"|"moderators"|"more";
+type Sheet="none"|"gifts"|"guests"|"battle"|"fans"|"ranking"|"moderators"|"more";
 
 type LiveSummary={
   id:string;
@@ -154,6 +165,7 @@ export function LiveStage({
   const [guestState,setGuestState]=useState<GuestState>({guests:[],me:null,isHost:live.isHost});
   const [moderatorState,setModeratorState]=useState<ModeratorState>({moderators:[],isHost:live.isHost,isModerator:false});
   const [battle,setBattle]=useState<Battle|null>(null);
+  const [ranking,setRanking]=useState<RankingEntry[]>([]);
   const [comment,setComment]=useState("");
   const [participantCount,setParticipantCount]=useState(Math.max(1,live.viewerCount));
   const [sheet,setSheet]=useState<Sheet>("none");
@@ -164,6 +176,7 @@ export function LiveStage({
   const [layout,setLayout]=useState<"grid"|"focus">("grid");
   const [battleClock,setBattleClock]=useState("");
   const [summary,setSummary]=useState<LiveSummary|null>(null);
+  const [fanSpotlight,setFanSpotlight]=useState("");
 
   const canPublish=live.isHost||guestState.me?.status==="accepted";
   const canModerate=live.isHost||moderatorState.isModerator;
@@ -194,20 +207,39 @@ export function LiveStage({
     setBattle(body.data);
   },[live.id]);
 
+  const loadRanking=useCallback(async()=>{
+    const body=await api<{data:RankingEntry[]}>(`/api/v1/lives/${live.id}/ranking`);
+    setRanking(body.data);
+  },[live.id]);
+
   const loadSummary=useCallback(async()=>{
     const body=await api<{data:LiveSummary}>(`/api/v1/lives/${live.id}/summary`);
     setSummary(body.data);
   },[live.id]);
 
   const refresh=useCallback(async()=>{
-    await Promise.allSettled([loadComments(),loadGuests(),loadModerators(),loadBattle()]);
-  },[loadBattle,loadComments,loadGuests,loadModerators]);
+    await Promise.allSettled([loadComments(),loadGuests(),loadModerators(),loadBattle(),loadRanking()]);
+  },[loadBattle,loadComments,loadGuests,loadModerators,loadRanking]);
 
   useEffect(()=>{
     void refresh();
     const timer=window.setInterval(()=>void refresh(),3500);
     return()=>window.clearInterval(timer);
   },[refresh]);
+
+  useEffect(()=>{
+    if(live.isHost)return;
+    let active=true;
+    void (async()=>{
+      try{
+        const status=await api<{data:{active:boolean}}>(`/api/v1/fans/status?creatorUserId=${live.hostId}`);
+        if(!active||!status.data.active)return;
+        setFanJoined(true);
+        await api(`/api/v1/lives/${live.id}/fan-entry`,{method:"POST",body:"{}"}).catch(()=>null);
+      }catch{}
+    })();
+    return()=>{active=false;};
+  },[live.hostId,live.id,live.isHost]);
 
   useEffect(()=>{
     if(!battle?.endsAt){
@@ -235,12 +267,17 @@ export function LiveStage({
         });
         socket.addEventListener("message",event=>{
           try{
-            const payload=JSON.parse(String(event.data)) as {channel?:string;event?:string};
+            const payload=JSON.parse(String(event.data)) as {channel?:string;event?:string;data?:{displayName?:string}};
             if(payload.channel!=="live:"+live.id)return;
             if(payload.event?.startsWith("live.comment"))void loadComments();
             if(payload.event?.startsWith("live.guest"))void loadGuests();
             if(payload.event?.startsWith("live.battle"))void loadBattle();
+            if(payload.event==="live.gift.received")void loadRanking();
             if(payload.event?.startsWith("live.moderation"))void loadComments();
+            if(payload.event==="live.fan.joined"&&payload.data?.displayName){
+              setFanSpotlight(payload.data.displayName);
+              window.setTimeout(()=>setFanSpotlight(""),3200);
+            }
             if(payload.event==="live.ended"){
               if(live.isHost)void loadSummary();
               else{
@@ -257,7 +294,7 @@ export function LiveStage({
       closed=true;
       socket?.close();
     };
-  },[live.id,live.isHost,loadBattle,loadComments,loadGuests,loadSummary,onClose,onEnded]);
+  },[live.id,live.isHost,loadBattle,loadComments,loadGuests,loadRanking,loadSummary,onClose,onEnded]);
 
   const flash=(kind:"error"|"success",text:string)=>{
     setMessage({kind,text});
@@ -426,7 +463,7 @@ export function LiveStage({
         })
       });
       setSheet("none");
-      await loadBattle();
+      await Promise.allSettled([loadBattle(),loadRanking()]);
       flash("success",`${gift.name} enviado.`);
     }catch(e){
       flash("error",e instanceof Error?e.message:"Não foi possível enviar o presente.");
@@ -450,6 +487,7 @@ export function LiveStage({
       });
       setFanJoined(true);
       setSheet("none");
+      await api(`/api/v1/lives/${live.id}/fan-entry`,{method:"POST",body:"{}"}).catch(()=>null);
       flash("success",`Mega Fã ativado por ${product.durationDays} dias.`);
     }catch(e){
       flash("error",e instanceof Error?e.message:"Não foi possível ativar Mega Fã.");
@@ -597,6 +635,7 @@ export function LiveStage({
           <span>@{item.username}</span>
         </div>
         <p>{item.body}</p>
+        {item.isMegaFan&&<span className="live-comment-fan">★ Mega Fã</span>}
         {canModerate&&item.authorId!==currentUserId&&<div className="live-comment-mod">
           <button onClick={()=>void moderate("pin_comment",item)}>Fixar</button>
           <button onClick={()=>void moderate("delete_comment",item)}>Excluir</button>
@@ -616,6 +655,9 @@ export function LiveStage({
       <button onClick={()=>setSheet("guests")}>
         <span>👥</span><small>{live.isHost?"Convidar":"Participar"}</small>
       </button>
+      <button onClick={()=>setSheet("ranking")}>
+        <span>🏆</span><small>Ranking</small>
+      </button>
       {live.isHost&&<button onClick={()=>setSheet("battle")}>
         <span>⚔</span><small>Batalha</small>
       </button>}
@@ -634,6 +676,10 @@ export function LiveStage({
       </div>
       <button onClick={()=>void guestAction("accept")}>Aceitar</button>
       <button className="secondary" onClick={()=>void guestAction("reject")}>Recusar</button>
+    </div>}
+
+    {fanSpotlight&&<div className="live-fan-spotlight">
+      <span>★</span><div><strong>{fanSpotlight}</strong><small>Mega Fã entrou na LIVE</small></div>
     </div>}
 
     {message&&<div className={"live-toast "+(message.kind==="success"?"is-success":"is-error")}>
@@ -689,6 +735,7 @@ export function LiveStage({
               sheet==="guests"?(live.isHost?"Convidados":"Participar da LIVE"):
               sheet==="battle"?"Batalha":
               sheet==="fans"?"Mega Fã":
+              sheet==="ranking"?"Ranking de presentes":
               sheet==="moderators"?"Moderadores":
               "Controles"
             }</h3>
@@ -722,6 +769,21 @@ export function LiveStage({
               <div><strong>{product.tier.replaceAll("_"," ")}</strong><span>{product.durationDays} dias</span></div>
               <b>◇ {product.priceDiamonds}</b>
             </button>)}
+          </div>
+        </div>}
+
+        {sheet==="ranking"&&<div className="stack">
+          <div className="live-sheet-card">
+            <strong>Maiores apoiadores desta LIVE</strong>
+            <p>Ranking calculado pelas transações reais de presentes e pelo valor em diamantes.</p>
+          </div>
+          <div className="live-ranking-list">
+            {ranking.length?ranking.map(entry=><div key={entry.userId} className={"live-ranking-item "+(entry.position<=3?"is-top":"")}>
+              <span className="live-ranking-position">{entry.position}</span>
+              <span className="live-mini-avatar">{avatarText(entry.displayName)}</span>
+              <div><strong>{entry.displayName}</strong><small>@{entry.username} · {entry.giftQuantity} presentes</small></div>
+              <b>◇ {entry.diamonds}</b>
+            </div>):<div className="live-sheet-card"><p>Ainda não houve presentes nesta LIVE.</p></div>}
           </div>
         </div>}
 
