@@ -35,6 +35,7 @@ export function LivesBrowser({
   const [error,setError]=useState("");
   const [creating,setCreating]=useState(false);
   const [localLives,setLocalLives]=useState(lives);
+  const [filter,setFilter]=useState<"for-you"|"following"|"popular"|"talk"|"games">("for-you");
 
   useEffect(()=>{
     setLocalLives(lives);
@@ -47,6 +48,15 @@ export function LivesBrowser({
     ()=>localLives.find(live=>live.id===activeId)??null,
     [activeId,localLives]
   );
+
+  const visibleLives=useMemo(()=>{
+    const category=(live:LiveItem)=>(live.category??"").toLocaleLowerCase("pt-BR");
+    if(filter==="following")return localLives.filter(live=>live.isFollowing);
+    if(filter==="popular")return [...localLives].sort((a,b)=>b.viewerCount-a.viewerCount||b.peakViewers-a.peakViewers);
+    if(filter==="talk")return localLives.filter(live=>/(conversa|papo|chat|talk)/i.test(category(live)));
+    if(filter==="games")return localLives.filter(live=>/(game|jogo|games|gaming)/i.test(category(live)));
+    return localLives;
+  },[filter,localLives]);
 
   const openLive=(id:string)=>{
     if(!loggedIn){
@@ -106,11 +116,11 @@ export function LivesBrowser({
     <section className="live-discovery">
       <div className="live-discovery-toolbar">
         <div className="live-filter-row">
-          <button className="live-filter is-active">Para você</button>
-          <button className="live-filter">Seguindo</button>
-          <button className="live-filter">Populares</button>
-          <button className="live-filter">Conversas</button>
-          <button className="live-filter">Games</button>
+          <button className={"live-filter "+(filter==="for-you"?"is-active":"")} onClick={()=>setFilter("for-you")}>Para você</button>
+          <button className={"live-filter "+(filter==="following"?"is-active":"")} onClick={()=>setFilter("following")}>Seguindo</button>
+          <button className={"live-filter "+(filter==="popular"?"is-active":"")} onClick={()=>setFilter("popular")}>Populares</button>
+          <button className={"live-filter "+(filter==="talk"?"is-active":"")} onClick={()=>setFilter("talk")}>Conversas</button>
+          <button className={"live-filter "+(filter==="games"?"is-active":"")} onClick={()=>setFilter("games")}>Games</button>
         </div>
 
         <button
@@ -123,13 +133,13 @@ export function LivesBrowser({
 
       {error&&<div className="error" role="alert">{error}</div>}
 
-      {localLives.length===0
+      {visibleLives.length===0
         ?<div className="card live-empty-state">
           <div className="live-empty-orb">◉</div>
           <div>
             <span className="eyebrow">AGORA</span>
-            <h2>Ninguém está ao vivo neste momento.</h2>
-            <p>Abra a primeira LIVE ou volte em alguns minutos para descobrir novas transmissões.</p>
+            <h2>{localLives.length===0?"Ninguém está ao vivo neste momento.":"Nenhuma LIVE neste filtro."}</h2>
+            <p>{localLives.length===0?"Abra a primeira LIVE ou volte em alguns minutos para descobrir novas transmissões.":"Troque o filtro para descobrir outras transmissões ao vivo."}</p>
           </div>
           <button
             className="button"
@@ -139,7 +149,7 @@ export function LivesBrowser({
           </button>
         </div>
         :<div className="live-card-grid">
-          {localLives.map((live,index)=><article
+          {visibleLives.map((live,index)=><article
             className={"live-preview-card "+(index===0?"is-featured":"")}
             key={live.id}
           >
