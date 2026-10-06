@@ -1,20 +1,21 @@
+import { AuthShell } from "@/components/auth-shell";
+
 export default async function VerifyEmailPage({searchParams}:{searchParams:Promise<Record<string,string|string[]|undefined>>}){
   const p=await searchParams;
   const token=typeof p.token==="string"?p.token:"";
   const email=typeof p.email==="string"?p.email:"";
-  return <main className="auth"><section className="authbox stack">
-    <div><h1>Verifique seu e-mail</h1><p className="muted">A conta só é liberada depois da confirmação do endereço de e-mail.</p></div>
-    {p.success&&<div className="success">E-mail confirmado. Você já pode entrar.</div>}
+  return <AuthShell eyebrow="CONFIRMAÇÃO" title="Verifique seu e-mail." description="Essa confirmação protege sua conta e libera o acesso completo ao Seven Chat.">
+    {p.success&&<div className="success">E-mail confirmado. Sua conta está pronta para entrar.</div>}
     {p.error&&<div className="error">O link é inválido ou expirou.</div>}
-    {p.delivery==="failed"&&<div className="error">Sua conta foi criada, mas o e-mail de confirmação não pôde ser enviado. Use o botão abaixo para tentar novamente.</div>}
-    {p.delivery==="sent"&&<div className="success">E-mail de confirmação enviado. Confira também a pasta de spam.</div>}
-    {token?<form className="stack" action="/api/auth/verify-email" method="post"><input type="hidden" name="token" value={token}/><button className="button">Confirmar e-mail</button></form>:<>
-      <p className="muted">Confira sua caixa de entrada e também o spam.</p>
+    {p.delivery==="failed"&&<div className="error">A conta foi criada, mas o e-mail de confirmação não pôde ser enviado. Tente novamente abaixo.</div>}
+    {p.delivery==="sent"&&<div className="success">E-mail enviado. Confira também spam e promoções.</div>}
+    {token?<form className="stack" action="/api/auth/verify-email" method="post"><input type="hidden" name="token" value={token}/><button className="button full">Confirmar meu e-mail</button></form>:<>
+      <div className="card soft"><strong>Não encontrou a mensagem?</strong><p className="muted" style={{marginBottom:0,fontSize:13}}>Você pode pedir um novo link de confirmação abaixo.</p></div>
       <form className="stack" action="/api/auth/resend-verification" method="post">
-        <input className="input" type="email" name="email" defaultValue={email} placeholder="Seu e-mail" required/>
-        <button className="button secondary">Reenviar confirmação</button>
+        <label className="field"><span>Seu e-mail</span><input className="input" type="email" name="email" defaultValue={email} placeholder="voce@exemplo.com" required/></label>
+        <button className="button secondary full">Reenviar confirmação</button>
       </form>
     </>}
-    <a className="button secondary" href="/login">Voltar ao login</a>
-  </section></main>;
+    <a className="button ghost full" href="/login">Voltar ao login</a>
+  </AuthShell>;
 }
