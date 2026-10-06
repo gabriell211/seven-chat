@@ -580,3 +580,33 @@ a,button{-webkit-tap-highlight-color:transparent}
   .live-summary-grid{grid-template-columns:repeat(2,1fr)}
   .live-summary h2{font-size:24px}
 }
+
+
+/* Seven LIVE — contributor ranking and Mega Fan presence */
+.live-comment-fan{
+  display:inline-flex!important;margin-top:3px;padding:2px 5px;border-radius:999px;
+  background:linear-gradient(135deg,rgba(245,158,11,.23),rgba(236,72,153,.2));
+  color:#ffe3a4!important;font-size:7px!important;font-weight:950!important;letter-spacing:.04em
+}
+.live-fan-spotlight{
+  position:absolute;z-index:14;left:16px;top:105px;display:flex;align-items:center;gap:9px;
+  padding:8px 11px;border-radius:999px;
+  background:linear-gradient(90deg,rgba(245,158,11,.88),rgba(236,72,153,.82));
+  box-shadow:0 12px 35px rgba(236,72,153,.25);animation:live-spotlight-in .28s ease both
+}
+.live-fan-spotlight>span{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.2);font-weight:950}
+.live-fan-spotlight>div{display:grid;gap:0}.live-fan-spotlight strong{font-size:10px}.live-fan-spotlight small{font-size:8px;color:#fff7e6}
+@keyframes live-spotlight-in{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+.live-ranking-list{display:grid;gap:7px}
+.live-ranking-item{
+  display:grid;grid-template-columns:28px 34px minmax(0,1fr) auto;align-items:center;gap:9px;
+  padding:9px;border-radius:13px;border:1px solid var(--border-soft);background:rgba(255,255,255,.018)
+}
+.live-ranking-item.is-top{background:linear-gradient(90deg,rgba(245,158,11,.08),rgba(139,92,246,.05));border-color:rgba(245,158,11,.16)}
+.live-ranking-position{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:rgba(255,255,255,.04);font-size:10px;font-weight:950;color:#d8d0df}
+.live-ranking-item:nth-child(1) .live-ranking-position{background:rgba(245,158,11,.18);color:#ffd778}
+.live-ranking-item:nth-child(2) .live-ranking-position{background:rgba(203,213,225,.12);color:#e2e8f0}
+.live-ranking-item:nth-child(3) .live-ranking-position{background:rgba(180,83,9,.15);color:#fdba74}
+.live-ranking-item>div{display:grid;gap:2px;min-width:0}.live-ranking-item strong{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.live-ranking-item small{font-size:9px;color:var(--muted)}
+.live-ranking-item>b{font-size:11px;color:#dcc4ff;white-space:nowrap}
+@media(max-width:700px){.live-fan-spotlight{left:10px;top:94px}.live-ranking-item{grid-template-columns:26px 32px minmax(0,1fr) auto}}
