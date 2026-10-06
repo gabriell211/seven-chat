@@ -26,62 +26,6 @@ export async function GET(req:Request){
     return NextResponse.json({error:"unauthorized"},{status:401});
   }
 
-  if(url.searchParams.get("mode")==="activate-email"){
-    const email=(url.searchParams.get("email")??"").trim().toLowerCase();
-    if(!email){
-      return NextResponse.json({error:"email_required"},{status:422});
-    }
-
-    const client=await pool.connect();
-    try{
-      await client.query("BEGIN");
-      const updated=await client.query<{id:string;email:string;username:string}>(
-        `UPDATE users
-         SET status='active',email_verified_at=COALESCE(email_verified_at,NOW()),updated_at=NOW()
-         WHERE lower(email)=lower($1)
-           AND status='pending_verification'
-         RETURNING id,email,username`,
-        [email]
-      );
-
-      if(updated.rows.length){
-        await client.query(
-          `UPDATE auth_challenges
-           SET consumed_at=COALESCE(consumed_at,NOW())
-           WHERE user_id=$1 AND purpose='verify_email' AND consumed_at IS NULL`,
-          [updated.rows[0].id]
-        );
-      }
-
-      await client.query("COMMIT");
-
-      if(!updated.rows.length){
-        const current=await pool.query<{id:string;email:string;username:string;status:string;email_verified_at:Date|null}>(
-          `SELECT id,email,username,status,email_verified_at
-           FROM users
-           WHERE lower(email)=lower($1)
-           LIMIT 1`,
-          [email]
-        );
-        return NextResponse.json({
-          activated:false,
-          account:current.rows[0]??null
-        });
-      }
-
-      return NextResponse.json({
-        activated:true,
-        account:{email:updated.rows[0].email,username:updated.rows[0].username,status:"active"}
-      });
-    }catch(error){
-      await client.query("ROLLBACK");
-      console.error("e2e activate-email failed",error);
-      return NextResponse.json({error:"activate_failed"},{status:500});
-    }finally{
-      client.release();
-    }
-  }
-
   if(url.searchParams.get("mode")==="inspect"){
     const columns=await pool.query<{
       table_name:string;
