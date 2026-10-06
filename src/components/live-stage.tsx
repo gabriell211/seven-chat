@@ -15,6 +15,7 @@ export type LiveItem={
   hostDisplayName:string;
   hostAvatarUrl:string|null;
   isHost:boolean;
+  isFollowing:boolean;
 };
 
 export type LiveGift={
@@ -158,7 +159,7 @@ export function LiveStage({
   const [sheet,setSheet]=useState<Sheet>("none");
   const [message,setMessage]=useState<{kind:"error"|"success";text:string}|null>(null);
   const [busy,setBusy]=useState("");
-  const [followed,setFollowed]=useState(false);
+  const [followed,setFollowed]=useState(live.isFollowing);
   const [fanJoined,setFanJoined]=useState(false);
   const [layout,setLayout]=useState<"grid"|"focus">("grid");
   const [battleClock,setBattleClock]=useState("");
