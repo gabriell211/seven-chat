@@ -36,8 +36,17 @@ export default async function Lives({searchParams}:{searchParams:Promise<Record<
       .where(and(eq(users.status,"active"),eq(profiles.isPrivate,false)))
       .orderBy(desc(users.createdAt))
       .limit(40)
+      .catch(()=>[]),
+    db.select({
+      code:fanProducts.code,
+      tier:fanProducts.tier,
+      durationDays:fanProducts.durationDays,
+      priceDiamonds:fanProducts.priceDiamonds
+    }).from(fanProducts)
+      .where(eq(fanProducts.isActive,true))
+      .limit(10)
       .catch(()=>[])
-  ]):[[],[],[]];
+  ]):[[],[],[],[]];
 
   const data=rows.map(live=>({...live,isHost:session?.userId===live.hostId}));
 
@@ -49,6 +58,7 @@ export default async function Lives({searchParams}:{searchParams:Promise<Record<
     <LivesBrowser
       lives={data}
       gifts={giftRows}
+      fanProducts={fanRows}
       suggestedUsers={people}
       loggedIn={Boolean(session)}
       currentUserId={session?.userId??""}
