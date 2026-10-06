@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { LivesBrowser } from "@/components/lives-browser";
-import { fanProducts, gifts, liveSessions, profiles, users } from "@/db/schema";
+import { fanProducts, follows, gifts, liveSessions, profiles, users } from "@/db/schema";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 
@@ -48,7 +48,15 @@ export default async function Lives({searchParams}:{searchParams:Promise<Record<
       .catch(()=>[])
   ]):[[],[],[],[]];
 
-  const data=rows.map(live=>({...live,isHost:session?.userId===live.hostId}));
+  const followingRows=session&&process.env.DATABASE_URL
+    ?await db.select({followingId:follows.followingId}).from(follows).where(eq(follows.followerId,session.userId)).catch(()=>[])
+    :[];
+  const followingIds=new Set(followingRows.map(row=>row.followingId));
+  const data=rows.map(live=>({
+    ...live,
+    isHost:session?.userId===live.hostId,
+    isFollowing:followingIds.has(live.hostId)
+  }));
 
   return <AppShell>
     <div className="page-heading live-page-heading">
