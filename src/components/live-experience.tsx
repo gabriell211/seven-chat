@@ -171,7 +171,7 @@ export function LiveExperience({
           {!live.isHost&&loggedIn&&<FollowButton userId={live.hostId} initialFollowing={live.initialFollowing}/>}
         </div>
         <div className="seven-live-top-actions">
-          <span className="live-chip">{live.viewerCount.toLocaleString("pt-BR")} assistindo</span>
+          <span className="live-chip">AO VIVO</span>
           <button className="seven-live-close" onClick={onClose} aria-label="Fechar live">×</button>
         </div>
       </div>
