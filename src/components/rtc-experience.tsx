@@ -19,12 +19,12 @@ async function request<T>(url:string,init:RequestInit={}):Promise<T>{
   return body as T;
 }
 
-function LiveVideoStage({canPublishLocal}:{canPublishLocal:boolean}){
+function LiveVideoStage({canPublishLocal,layout}:{canPublishLocal:boolean;layout:"grid"|"panel"}){
   const tracks=useTracks([{source:Track.Source.Camera,withPlaceholder:true}]);
   const visible=tracks.slice(0,5);
   const count=Math.max(1,visible.length);
 
-  return <div className={"seven-rtc-live-grid seven-rtc-live-grid-"+count}>
+  return <div className={"seven-rtc-live-grid seven-rtc-live-grid-"+count+" seven-rtc-layout-"+layout}>
     {visible.length?visible.map((trackRef,index)=><div className={"seven-rtc-tile seven-rtc-tile-"+index} key={trackRef.participant.identity+"-"+trackRef.source}>
       <ParticipantTile trackRef={trackRef} disableSpeakingIndicator={false}/>
       <div className="seven-rtc-name">{trackRef.participant.name||trackRef.participant.identity}</div>
@@ -44,9 +44,9 @@ function LiveVideoStage({canPublishLocal}:{canPublishLocal:boolean}){
 }
 
 export function RtcExperience({
-  resourceType,resourceId,mode,canPublishLocal=false,password
+  resourceType,resourceId,mode,canPublishLocal=false,password,liveLayout="panel"
 }:{
-  resourceType:ResourceType;resourceId:string;mode:"audio"|"video";canPublishLocal?:boolean;password?:string;
+  resourceType:ResourceType;resourceId:string;mode:"audio"|"video";canPublishLocal?:boolean;password?:string;liveLayout?:"grid"|"panel";
 }){
   const [connection,setConnection]=useState<{token:string;url:string}|null>(null);
   const [error,setError]=useState("");
@@ -88,7 +88,7 @@ export function RtcExperience({
       onDisconnected={()=>setConnection(null)}
       onError={(err)=>setError(err.message)}
     >
-      {mode==="video"?<LiveVideoStage canPublishLocal={canPublishLocal}/>:<>
+      {mode==="video"?<LiveVideoStage canPublishLocal={canPublishLocal} layout={liveLayout}/>:<>
         <RoomAudioRenderer/>
         <div className="rtc-audio-state">
           <strong>Conectado à sala</strong>
