@@ -443,3 +443,6 @@ a,button{-webkit-tap-highlight-color:transparent}
 .topbar-profile:hover{background:var(--panel-2);border-color:#3a3148}.topbar-profile>span{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#7c3aed,#ec4899);font-size:11px;font-weight:900}.topbar-profile b{font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1080px){.global-search{width:min(330px,32vw)}.topbar-profile b{display:none}.topbar-profile{padding-right:4px}}
 @media(max-width:760px){.global-search{display:none}.topbar-copy{min-width:0}.topbar-actions{gap:6px}.topbar-profile{display:none}}
+
+
+.conversation-item.is-active{background:linear-gradient(90deg,rgba(139,92,246,.14),rgba(139,92,246,.04))!important;border:1px solid rgba(167,139,250,.12)}
