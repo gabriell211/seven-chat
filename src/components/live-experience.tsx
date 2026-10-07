@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { RtcExperience } from "@/components/rtc-experience";
+import { FollowButton } from "@/components/follow-button";
 
 type Live={
   id:string;title:string;category:string|null;viewerCount:number;peakViewers:number;
@@ -77,6 +78,14 @@ export function LiveExperience({
     finally{setBusy(false);}
   }
 
+  async function shareLive(){
+    const url=location.origin+"/lives";
+    try{
+      if(navigator.share)await navigator.share({title:live.title,text:"Assista esta live no Seven Chat",url});
+      else{await navigator.clipboard.writeText(url);setError("Link da live copiado.");}
+    }catch{}
+  }
+
   async function endLive(){
     try{
       setBusy(true);setError("");
@@ -93,7 +102,7 @@ export function LiveExperience({
         <div className="seven-live-host">
           <div className="avatar sm">{live.hostDisplayName[0]?.toUpperCase()}</div>
           <div><strong>{live.hostDisplayName}</strong><span>@{live.hostUsername}</span></div>
-          {!live.isHost&&<button className="seven-live-follow" type="button">Seguir</button>}
+          {!live.isHost&&loggedIn&&<FollowButton userId={live.hostId} initialFollowing={false}/>}
         </div>
         <div className="seven-live-top-actions">
           <span className="live-chip">{live.viewerCount.toLocaleString("pt-BR")} assistindo</span>
@@ -113,11 +122,9 @@ export function LiveExperience({
       </div>
 
       <div className="seven-live-rail">
-        <button title="Curtir">♡<small>Curtir</small></button>
         <button onClick={()=>setGiftOpen(v=>!v)} title="Enviar gift">◇<small>Gift</small></button>
         {live.isHost&&<button onClick={()=>setPkOpen(v=>!v)} title="Iniciar batalha">⚔<small>PK</small></button>}
-        <button title="Compartilhar">↗<small>Compartilhar</small></button>
-        <button title="Mais opções">•••<small>Mais</small></button>
+        <button onClick={()=>void shareLive()} title="Compartilhar">↗<small>Compartilhar</small></button>
       </div>
 
       <form className="seven-live-compose" onSubmit={sendComment}>
