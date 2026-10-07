@@ -67,8 +67,10 @@ export function LivesBrowser({lives,gifts,loggedIn,rtcReady}:{lives:Live[];gifts
   const requestedLive=searchParams.get("live");
   const [active,setActive]=useState<string|null>(()=>lives.some(v=>v.id===requestedLive)?requestedLive:null);
   const [createOpen,setCreateOpen]=useState(false);
+  const [filter,setFilter]=useState<"all"|"battle">("all");
   const [error,setError]=useState("");
   const current=lives.find(v=>v.id===active)??null;
+  const displayedLives=filter==="battle"?lives.filter(v=>v.battle?.status==="active"):lives;
 
   useEffect(()=>{
     if(requestedLive&&lives.some(v=>v.id===requestedLive))setActive(requestedLive);
@@ -110,8 +112,8 @@ export function LivesBrowser({lives,gifts,loggedIn,rtcReady}:{lives:Live[];gifts
   return <>
     <div className="live-discovery-head">
       <div className="section-tabs">
-        <span className="section-tab active">Para você</span>
-        <span className="section-tab">Ao vivo</span>
+        <button type="button" className={"section-tab "+(filter==="all"?"active":"")} onClick={()=>setFilter("all")}>Para você</button>
+        <button type="button" className={"section-tab "+(filter==="battle"?"active":"")} onClick={()=>setFilter("battle")}>Batalhas</button>
       </div>
       <button className="button live-go-button" disabled={!loggedIn||!rtcReady} onClick={()=>setCreateOpen(true)}>
         <span>＋</span>{!rtcReady?"RTC indisponível":loggedIn?"Transmitir LIVE":"Entre para transmitir"}
@@ -120,8 +122,8 @@ export function LivesBrowser({lives,gifts,loggedIn,rtcReady}:{lives:Live[];gifts
 
     {error&&<div className="error" role="alert">{error}</div>}
 
-    {lives.length?<div className="live-discovery-grid">
-      {lives.map(live=><article className="live-card-modern" key={live.id} onClick={()=>rtcReady&&openLive(live.id)}>
+    {displayedLives.length?<div className="live-discovery-grid">
+      {displayedLives.map(live=><article className="live-card-modern" key={live.id} onClick={()=>rtcReady&&openLive(live.id)}>
         <div className="live-card-cover" style={live.thumbnailUrl?{backgroundImage:"linear-gradient(180deg,transparent,rgba(0,0,0,.82)),url(\""+live.thumbnailUrl+"\")"}:undefined}>
           <div className="live-card-top">
             <span className="live-chip">LIVE</span>
