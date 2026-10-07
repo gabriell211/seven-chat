@@ -24,7 +24,7 @@ export default async function Notifications(){
     return {
       id:n.id,type:n.type,entityType:n.entityType,entityId:n.entityId,
       createdAt:n.createdAt.toISOString(),readAt:n.readAt?.toISOString()??null,
-      actorName:actor?.displayName??null,actorUsername:actor?.username??null
+      actorName:actor?.displayName??null,actorUsername:actor?.username??null,payload:(n.payload as Record<string,unknown>)??{}
     };
   });
 
