@@ -48,12 +48,12 @@ export function LivesBrowser({lives,gifts,loggedIn,rtcReady}:{lives:Live[];gifts
     {lives.length?<div className="live-discovery-grid">
       {lives.map(live=><article className="live-card-modern" key={live.id} onClick={()=>rtcReady&&setActive(live.id)}>
         <div className="live-card-cover" style={live.thumbnailUrl?{backgroundImage:`linear-gradient(180deg,transparent,rgba(0,0,0,.8)),url("${live.thumbnailUrl}")`}:undefined}>
-          <div className="live-card-top"><span className="live-chip">{rtcReady?"AO VIVO":"INDISPONÍVEL"}</span><span className="live-card-viewers">{live.viewerCount.toLocaleString("pt-BR")}</span></div>
+          <div className="live-card-top"><span className="live-chip">{rtcReady?"AO VIVO":"INDISPONÍVEL"}</span></div>
           <div className="live-card-center"><span>{rtcReady?"▶":"!"}</span></div>
           <div className="live-card-bottom">
             <div className="userrow"><div className="avatar sm">{live.hostDisplayName[0]?.toUpperCase()}</div><div><strong>{live.hostDisplayName}</strong><span>@{live.hostUsername}</span></div></div>
             <h3>{live.title}</h3>
-            <div className="row">{live.category&&<span className="pill">{live.category}</span>}<span className="pill">Pico {live.peakViewers}</span></div>
+            <div className="row">{live.category&&<span className="pill">{live.category}</span>}</div>
           </div>
         </div>
       </article>)}
