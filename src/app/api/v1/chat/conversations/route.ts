@@ -33,7 +33,7 @@ export async function POST(req:Request){
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Conversa inválida."}},{status:422});
     const others=[...new Set(parsed.data.memberIds.filter(v=>v!==session.userId))];
     if(parsed.data.type==="direct"&&others.length!==1)return NextResponse.json({error:{code:"DIRECT_MEMBER_COUNT",message:"Conversa direta exige exatamente outra pessoa."}},{status:422});
-    if(parsed.data.isPrivate&&parsed.data.type==="group"&&!(await hasVipAtLeast(session.userId,"vip+")))return NextResponse.json({error:{code:"VIP_REQUIRED",message:"Grupo privado exige VIP+."}},{status:403});
+    if(parsed.data.isPrivate&&parsed.data.type==="group"&&!(await hasVipAtLeast(session.userId,"vip")))return NextResponse.json({error:{code:"VIP_REQUIRED",message:"Grupo privado exige Seven VIP."}},{status:403});
     for(const id of others)if(await areUsersBlocked(session.userId,id))return NextResponse.json({error:{code:"BLOCKED",message:"Contato indisponível."}},{status:403});
 
     if(parsed.data.type==="direct"){
