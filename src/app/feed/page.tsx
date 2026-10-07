@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { desc, eq, gt } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { PostActions } from "@/components/post-actions";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { posts, profiles, stories, users } from "@/db/schema";
@@ -71,7 +72,7 @@ export default async function FeedPage(){
 
         {feed.length===0?
           <div className="card empty"><div><div className="empty-icon">✦</div><strong>Seu feed está pronto para ganhar vida.</strong><p>Publique algo ou encontre pessoas para começar a acompanhar novidades por aqui.</p><Link className="button compact" href="/explore">Explorar comunidade</Link></div></div>
-          :feed.map(p=><article className="card post" key={p.id}>
+          :feed.map(p=><article className="card post" id={"post-"+p.id} key={p.id}>
             <div className="posthead">
               <Link className="userrow" href={"/u/"+p.username}>
                 <div className="avatar">{p.displayName[0]?.toUpperCase()}</div>
@@ -80,12 +81,7 @@ export default async function FeedPage(){
               <span className="pill">{p.createdAt.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}</span>
             </div>
             <div className="post-body">{p.body}</div>
-            <div className="post-actions social-actions">
-              <button className="post-action">♡ Curtir</button>
-              <button className="post-action">◌ Comentar</button>
-              <button className="post-action">↗ Compartilhar</button>
-              <button className="post-action">⌑ Salvar</button>
-            </div>
+            <PostActions postId={p.id} loggedIn={Boolean(session)}/>
           </article>)
         }
       </section>
