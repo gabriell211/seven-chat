@@ -39,7 +39,7 @@ export function PrivacySettings({initialSessions,initialExport,initialDeletion}:
 
   return <div className="grid">
     {error&&<div className="error" role="alert">{error}</div>}
-    <section className="card stack">
+    <section className="card stack" id="devices">
       <div className="settings-section-head"><div className="settings-section-icon">⌁</div><div><h3>Sessões e dispositivos</h3><p>Revogue acessos que você não reconhece.</p></div></div>
       <div className="device-list">
         {sessions.length===0?<p className="muted">Nenhuma sessão ativa.</p>:sessions.map(s=><div key={s.id} className="device-item">
@@ -49,7 +49,7 @@ export function PrivacySettings({initialSessions,initialExport,initialDeletion}:
       </div>
       <button className="button secondary" onClick={()=>void revokeAll()}>Sair de todos os dispositivos</button>
     </section>
-    <section className="card stack">
+    <section className="card stack" id="data">
       <div className="settings-section-head"><div className="settings-section-icon">⇩</div><div><h3>Exportar meus dados</h3><p>Gere um arquivo privado com os dados associados à sua conta.</p></div></div>
       {exportState&&<div className="row between"><span className="muted">Status da exportação</span><span className="pill">{exportState.status}</span></div>}
       {exportState?.download?<a className="button" href={exportState.download.url}>Baixar exportação</a>:<>
@@ -57,7 +57,7 @@ export function PrivacySettings({initialSessions,initialExport,initialDeletion}:
         {(exportState?.status==="queued"||exportState?.status==="processing"||exportState?.status==="ready")&&<button className="button ghost" onClick={()=>void refreshExport()}>Atualizar status</button>}
       </>}
     </section>
-    <section className="card stack danger-zone">
+    <section className="card stack danger-zone" id="account">
       <div className="settings-section-head"><div className="settings-section-icon">!</div><div><h3>Excluir conta</h3><p>A exclusão é agendada para 30 dias e pode ser cancelada antes da execução.</p></div></div>
       {deletion?.status==="scheduled"?<>
         <div className="error">Exclusão marcada para {new Date(deletion.scheduledFor).toLocaleString("pt-BR")}.</div>

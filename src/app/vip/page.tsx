@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { CheckoutButton } from "@/components/checkout-button";
 import { db } from "@/lib/db";
 import { vipPlans } from "@/db/schema";
 
@@ -28,7 +29,7 @@ export default async function Vip(){
         <span className="plan-benefit">✓ Identidade visual premium</span>
         <span className="plan-benefit">✓ Benefícios ligados à conta</span>
       </div>
-      <span className="button secondary full" aria-disabled="true">Disponível pela loja</span>
+      <CheckoutButton productType="vip" sku={plan.code} label="Assinar com InfinitePay"/>
     </article>)}</div>:<div className="card empty"><div><div className="empty-icon">◆</div><strong>Planos em preparação.</strong><p>Quando os planos ativos forem publicados no catálogo, eles aparecerão aqui.</p></div></div>}
   </AppShell>;
 }

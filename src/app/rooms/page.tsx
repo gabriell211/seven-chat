@@ -4,11 +4,13 @@ import { RoomsBrowser } from "@/components/rooms-browser";
 import { rooms, users, profiles } from "@/db/schema";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { isRtcConfigured } from "@/lib/rtc";
 
 export const dynamic="force-dynamic";
 
 export default async function Rooms(){
   const session=await getSession();
+  const rtcReady=isRtcConfigured();
   const rows=process.env.DATABASE_URL?await db.select({
     id:rooms.id,title:rooms.title,description:rooms.description,visibility:rooms.visibility,
     vipOnly:rooms.vipOnly,stageLimit:rooms.stageLimit,hostId:users.id,
@@ -25,9 +27,10 @@ export default async function Rooms(){
 
   return <AppShell>
     <div className="page-heading">
-      <div><span className="eyebrow">ÁUDIO SOCIAL</span><h1>Salas de voz</h1><p className="muted">Entre para ouvir, subir ao palco ou criar seu próprio espaço.</p></div>
-      <span className="pill"><span className="status-dot"/> {data.length} ativas</span>
+      <div><span className="eyebrow">ÁUDIO SOCIAL</span><h1>Salas de voz</h1><p className="muted">Salas conectadas ao backend e ao servidor RTC quando disponível.</p></div>
+      <span className="pill"><span className="status-dot"/> {rtcReady?data.length+" ativas":"RTC offline"}</span>
     </div>
-    <RoomsBrowser rooms={data} loggedIn={Boolean(session)}/>
+    {!rtcReady&&<div className="error">Áudio ao vivo está desativado porque o servidor LiveKit ainda não está configurado. O sistema não criará salas que ninguém consegue usar.</div>}
+    <RoomsBrowser rooms={data} loggedIn={Boolean(session)} rtcReady={rtcReady}/>
   </AppShell>;
 }

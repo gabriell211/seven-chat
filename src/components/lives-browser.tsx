@@ -6,11 +6,11 @@ import { LiveExperience } from "@/components/live-experience";
 
 type Live={
   id:string;title:string;category:string|null;viewerCount:number;peakViewers:number;
-  thumbnailUrl:string|null;hostId:string;hostUsername:string;hostDisplayName:string;isHost:boolean;
+  thumbnailUrl:string|null;hostId:string;hostUsername:string;hostDisplayName:string;isHost:boolean;canPublish:boolean;initialFollowing:boolean;battle:{id:string;status:string;liveAId:string;liveBId:string;scoreA:number;scoreB:number;durationSeconds:number;startsAt:string|null;endsAt:string|null}|null;
 };
 type Gift={id:string;name:string;priceDiamonds:number;category:string;animationType:string;assetUrl:string|null};
 
-export function LivesBrowser({lives,gifts,loggedIn}:{lives:Live[];gifts:Gift[];loggedIn:boolean}){
+export function LivesBrowser({lives,gifts,loggedIn,rtcReady}:{lives:Live[];gifts:Gift[];loggedIn:boolean;rtcReady:boolean}){
   const router=useRouter();
   const [active,setActive]=useState<string|null>(null);
   const [createOpen,setCreateOpen]=useState(false);
@@ -18,6 +18,7 @@ export function LivesBrowser({lives,gifts,loggedIn}:{lives:Live[];gifts:Gift[];l
   const current=lives.find(v=>v.id===active)??null;
 
   const create=async(form:FormData)=>{
+    if(!rtcReady){setError("RTC offline: não é possível iniciar uma live.");return;}
     try{
       setError("");
       const created=await fetch("/api/v1/lives",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({
@@ -36,64 +37,47 @@ export function LivesBrowser({lives,gifts,loggedIn}:{lives:Live[];gifts:Gift[];l
 
   return <>
     <div className="live-discovery-head">
-      <div className="section-tabs">
-        <span className="section-tab active">Para você</span>
-        <span className="section-tab">Seguindo</span>
-        <span className="section-tab">Batalhas</span>
-      </div>
-      <button className="button" disabled={!loggedIn} onClick={()=>setCreateOpen(true)}>
-        {loggedIn?"Iniciar live":"Entre para transmitir"}
+      <div className="section-tabs"><span className="section-tab active">Ao vivo</span></div>
+      <button className="button" disabled={!loggedIn||!rtcReady} onClick={()=>setCreateOpen(true)}>
+        {!rtcReady?"RTC indisponível":loggedIn?"Iniciar live":"Entre para transmitir"}
       </button>
     </div>
 
     {error&&<div className="error" role="alert">{error}</div>}
 
     {lives.length?<div className="live-discovery-grid">
-      {lives.map(live=><article className="live-card-modern" key={live.id} onClick={()=>setActive(live.id)}>
+      {lives.map(live=><article className="live-card-modern" key={live.id} onClick={()=>rtcReady&&setActive(live.id)}>
         <div className="live-card-cover" style={live.thumbnailUrl?{backgroundImage:`linear-gradient(180deg,transparent,rgba(0,0,0,.8)),url("${live.thumbnailUrl}")`}:undefined}>
-          <div className="live-card-top"><span className="live-chip">AO VIVO</span><span className="live-card-viewers">{live.viewerCount.toLocaleString("pt-BR")}</span></div>
-          <div className="live-card-center"><span>▶</span></div>
+          <div className="live-card-top"><span className="live-chip">{rtcReady?"AO VIVO":"INDISPONÍVEL"}</span></div>
+          <div className="live-card-center"><span>{rtcReady?"▶":"!"}</span></div>
           <div className="live-card-bottom">
             <div className="userrow"><div className="avatar sm">{live.hostDisplayName[0]?.toUpperCase()}</div><div><strong>{live.hostDisplayName}</strong><span>@{live.hostUsername}</span></div></div>
             <h3>{live.title}</h3>
-            <div className="row">{live.category&&<span className="pill">{live.category}</span>}<span className="pill">Pico {live.peakViewers}</span></div>
+            <div className="row">{live.category&&<span className="pill">{live.category}</span>}</div>
           </div>
         </div>
       </article>)}
-    </div>:<div className="card empty"><div><div className="empty-icon">◉</div><strong>Ninguém está ao vivo agora.</strong><p>Você pode abrir a primeira transmissão e começar a conversa.</p>{loggedIn&&<button className="button compact" onClick={()=>setCreateOpen(true)}>Iniciar live</button>}</div></div>}
+    </div>:<div className="card empty"><div><div className="empty-icon">◉</div><strong>Ninguém está ao vivo agora.</strong><p>{rtcReady?"Você pode abrir a primeira transmissão e começar a conversa.":"As transmissões serão liberadas quando o RTC estiver configurado."}</p>{loggedIn&&rtcReady&&<button className="button compact" onClick={()=>setCreateOpen(true)}>Iniciar live</button>}</div></div>}
 
-    {createOpen&&<div className="live-create-backdrop" onMouseDown={()=>setCreateOpen(false)}>
+    {createOpen&&rtcReady&&<div className="live-create-backdrop" onMouseDown={()=>setCreateOpen(false)}>
       <section className="live-create-panel" onMouseDown={e=>e.stopPropagation()}>
         <button className="seven-live-close live-create-close" onClick={()=>setCreateOpen(false)}>×</button>
         <div className="live-create-preview">
           <div className="live-create-camera">
-            <span className="live-chip">PRÉVIA</span>
-            <div><strong>Sua câmera aparecerá aqui ao iniciar</strong><p>O navegador pedirá acesso à câmera e ao microfone quando o estúdio conectar.</p></div>
+            <span className="live-chip">RTC PRONTO</span>
+            <div><strong>A câmera conecta ao entrar no estúdio</strong><p>O navegador solicitará acesso à câmera e ao microfone ao conectar no LiveKit.</p></div>
           </div>
-          <div className="live-create-devices"><span>◉ Câmera</span><span>⌁ Microfone</span><span>⚙ Qualidade automática</span></div>
+          <div className="live-create-devices"><span>◉ Câmera via LiveKit</span><span>⌁ Microfone via LiveKit</span></div>
         </div>
         <form action={create} className="live-create-form">
-          <div><span className="eyebrow">CRIAR LIVE</span><h2>Prepare sua transmissão</h2><p className="muted">Escolha um título claro e uma categoria para ajudar as pessoas a encontrar sua live.</p></div>
+          <div><span className="eyebrow">CRIAR LIVE</span><h2>Prepare sua transmissão</h2><p className="muted">A sessão só é criada se o servidor RTC estiver disponível.</p></div>
           <label className="field"><span>Título da live</span><input className="input" name="title" minLength={3} maxLength={120} placeholder="O que vai acontecer nessa live?" required/></label>
           <label className="field"><span>Categoria</span><select className="input" name="category" defaultValue="Conversa"><option>Conversa</option><option>Música</option><option>Games</option><option>Talentos</option><option>Relacionamentos</option><option>Comunidade</option><option>Outros</option></select></label>
-          <div className="live-create-options">
-            <span><b>Comentários</b><small>Ativados</small></span>
-            <span><b>Gifts</b><small>Ativados</small></span>
-            <span><b>Convidados</b><small>Até 4</small></span>
-            <span><b>PK</b><small>Disponível</small></span>
-          </div>
           <button className="button full">Entrar ao vivo</button>
         </form>
       </section>
     </div>}
 
-    {current&&<LiveExperience
-      live={current}
-      gifts={gifts}
-      loggedIn={loggedIn}
-      allLives={lives}
-      onClose={()=>setActive(null)}
-      onEnded={()=>router.refresh()}
-    />}
+    {current&&rtcReady&&<LiveExperience live={current} gifts={gifts} loggedIn={loggedIn} allLives={lives} onClose={()=>setActive(null)} onEnded={()=>router.refresh()}/>}
   </>;
 }
