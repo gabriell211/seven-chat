@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db, pool } from "@/lib/db";
 import { reels } from "@/db/schema";
@@ -43,7 +43,7 @@ export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
     `,[id,viewerKey]);
 
     if(inserted.rowCount){
-      const [updated]=await db.update(reels).set({viewCount:reels.viewCount+1}).where(eq(reels.id,id)).returning({viewCount:reels.viewCount});
+      const [updated]=await db.update(reels).set({viewCount:sql`${reels.viewCount} + 1`}).where(eq(reels.id,id)).returning({viewCount:reels.viewCount});
       return NextResponse.json({data:{counted:true,viewCount:updated?.viewCount??1}});
     }
     const [current]=await db.select({viewCount:reels.viewCount}).from(reels).where(eq(reels.id,id)).limit(1);
