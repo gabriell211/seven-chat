@@ -19,6 +19,9 @@ function label(type:string){
     live:"iniciou uma live",
     room:"abriu uma sala",
     live_guest_invite:"convidou você para participar da live",
+    live_guest_request:"pediu para participar da sua live",
+    live_guest_accepted:"aceitou você na live",
+    live_guest_rejected:"recusou seu pedido para participar",
     live_battle_invite:"convidou você para uma batalha"
   };
   return map[type]??type.replaceAll("_"," ");
