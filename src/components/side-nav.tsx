@@ -17,7 +17,7 @@ type IconName =
   | "settings";
 
 const items: Array<{ href: string; label: string; icon: IconName; mobile?: boolean }> = [
-  { href: "/", label: "Início", icon: "home", mobile: true },
+  { href: "/feed", label: "Início", icon: "home", mobile: true },
   { href: "/explore", label: "Explorar", icon: "search", mobile: true },
   { href: "/reels", label: "Reels", icon: "reels", mobile: true },
   { href: "/lives", label: "Lives", icon: "live" },
@@ -52,7 +52,7 @@ export function SideNav() {
   return (
     <nav className="nav" aria-label="Navegação principal">
       {items.map((item) => {
-        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = item.href === "/feed" ? pathname === "/feed" : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
