@@ -3,6 +3,7 @@ import { and, count, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/app-shell";
 import { FollowButton } from "@/components/follow-button";
+import { StartChatButton } from "@/components/start-chat-button";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { follows, posts, profiles, users } from "@/db/schema";
@@ -44,7 +45,7 @@ export default async function PublicProfile({params}:{params:Promise<{username:s
           <div className="avatar lg">{profile.displayName[0]?.toUpperCase()}</div>
           <div className="public-profile-actions">
             {isMe?<Link className="button secondary" href="/settings">Editar perfil</Link>:session?<FollowButton userId={profile.id} initialFollowing={followingRow.length>0}/>:<Link className="button" href="/login">Entrar para seguir</Link>}
-            {!isMe&&<Link className="button secondary" href="/chat">Mensagem</Link>}
+            {!isMe&&session&&<StartChatButton userId={profile.id}/>}
           </div>
         </div>
         <div className="profile-title"><h1>{profile.displayName}</h1>{profile.isVip&&<span className="vip-badge">VIP</span>}</div>
