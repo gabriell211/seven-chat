@@ -419,3 +419,12 @@ a,button{-webkit-tap-highlight-color:transparent}
 .diamond-package>div:first-child{display:grid;gap:2px}.diamond-package strong{font-size:20px}.diamond-package span{font-size:10px;color:#a992cf}.diamond-package>b{font-size:13px}
 .chat-client-controls{display:grid;gap:7px}.chat-client-controls>small{font-size:10px;line-height:1.4}
 @media(max-width:600px){.notification-toolbar{justify-content:space-between}.diamond-packages{grid-template-columns:1fr}.story-viewer{height:calc(100vh - 36px);aspect-ratio:auto}}
+
+
+/* Real interaction completion */
+.settings-nav a{display:block;padding:9px 10px;border-radius:10px;color:var(--muted);font-size:12px;font-weight:750}
+.settings-nav a:hover,.settings-nav a.active{background:rgba(139,92,246,.08);color:#d7c5ff}
+.notification-invite-actions{display:flex;gap:6px;align-items:center}
+.seven-live-battlebar{position:absolute;z-index:11;top:72px;left:50%;transform:translateX(-50%);min-width:min(420px,calc(100vw - 32px));padding:10px 12px;border-radius:16px;background:rgba(12,9,17,.72);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;gap:12px}
+.seven-live-battlebar>div:first-child{display:flex;align-items:center;gap:12px}.seven-live-battlebar b{font-size:18px}.seven-live-battlebar span{padding:5px 7px;border-radius:999px;background:linear-gradient(135deg,#ec4899,#7c3aed);font-size:10px;font-weight:900}.seven-live-battlebar strong{font-size:12px}
+@media(max-width:600px){.notification-invite-actions{grid-column:2/-1;justify-content:flex-start}.seven-live-battlebar{top:70px;min-width:0;width:calc(100vw - 20px);justify-content:space-between}.seven-live-battlebar .button{padding:7px 9px;font-size:10px}}
