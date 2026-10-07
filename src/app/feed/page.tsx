@@ -1,34 +1,59 @@
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, gt } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
-import { posts, profiles, users } from "@/db/schema";
+import { posts, profiles, stories, users } from "@/db/schema";
 
 export const dynamic="force-dynamic";
 
 export default async function FeedPage(){
   const session=await getSession();
   let feed:Array<{id:string;body:string;createdAt:Date;username:string;displayName:string}>=[];
+  let storyRows:Array<{id:string;username:string;displayName:string;type:string;textContent:string|null;createdAt:Date}>=[];
   if(process.env.DATABASE_URL){
     try{
-      feed=await db.select({
-        id:posts.id,body:posts.body,createdAt:posts.createdAt,
-        username:users.username,displayName:profiles.displayName
-      }).from(posts)
-        .innerJoin(users,eq(posts.authorId,users.id))
-        .innerJoin(profiles,eq(posts.authorId,profiles.userId))
-        .where(eq(posts.visibility,"public"))
-        .orderBy(desc(posts.createdAt))
-        .limit(30);
+      [feed,storyRows]=await Promise.all([
+        db.select({
+          id:posts.id,body:posts.body,createdAt:posts.createdAt,
+          username:users.username,displayName:profiles.displayName
+        }).from(posts)
+          .innerJoin(users,eq(posts.authorId,users.id))
+          .innerJoin(profiles,eq(posts.authorId,profiles.userId))
+          .where(eq(posts.visibility,"public"))
+          .orderBy(desc(posts.createdAt))
+          .limit(30),
+        db.select({
+          id:stories.id,username:users.username,displayName:profiles.displayName,
+          type:stories.type,textContent:stories.textContent,createdAt:stories.createdAt
+        }).from(stories)
+          .innerJoin(users,eq(stories.authorId,users.id))
+          .innerJoin(profiles,eq(stories.authorId,profiles.userId))
+          .where(gt(stories.expiresAt,new Date()))
+          .orderBy(desc(stories.createdAt))
+          .limit(18)
+      ]);
     }catch{}
   }
+
+  const uniqueStories=[...new Map(storyRows.map(s=>[s.username,s])).values()];
 
   return <AppShell>
     <div className="page-heading">
       <div><span className="eyebrow">FEED</span><h1>Para você</h1><p className="muted">Acompanhe pessoas, conversas e momentos da comunidade.</p></div>
       <Link className="button secondary compact" href="/explore">Encontrar pessoas</Link>
     </div>
+
+    {session&&<section className="stories-strip">
+      <Link className="story-item story-create" href="/profile">
+        <span className="story-ring"><span className="story-avatar">+</span></span>
+        <small>Seu story</small>
+      </Link>
+      {uniqueStories.map(s=><Link className="story-item" key={s.id} href={"/u/"+s.username}>
+        <span className="story-ring"><span className="story-avatar">{s.displayName[0]?.toUpperCase()}</span></span>
+        <small>{s.displayName.split(" ")[0]}</small>
+      </Link>)}
+    </section>}
 
     <div className="grid two">
       <section className="grid">
@@ -39,7 +64,7 @@ export default async function FeedPage(){
           </div>
           <textarea className="textarea" name="body" maxLength={4000} placeholder="No que você está pensando?" required/>
           <div className="composer-actions">
-            <span className="muted" style={{fontSize:12}}>Post público · até 4.000 caracteres</span>
+            <div className="composer-tools"><span>▧ Foto</span><span>▶ Vídeo</span><span>☺ Humor</span></div>
             <button className="button compact">Publicar</button>
           </div>
         </form>}
@@ -48,13 +73,19 @@ export default async function FeedPage(){
           <div className="card empty"><div><div className="empty-icon">✦</div><strong>Seu feed está pronto para ganhar vida.</strong><p>Publique algo ou encontre pessoas para começar a acompanhar novidades por aqui.</p><Link className="button compact" href="/explore">Explorar comunidade</Link></div></div>
           :feed.map(p=><article className="card post" key={p.id}>
             <div className="posthead">
-              <div className="userrow">
+              <Link className="userrow" href={"/u/"+p.username}>
                 <div className="avatar">{p.displayName[0]?.toUpperCase()}</div>
                 <div><strong>{p.displayName}</strong><div className="muted" style={{fontSize:12}}>@{p.username}</div></div>
-              </div>
+              </Link>
               <span className="pill">{p.createdAt.toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}</span>
             </div>
             <div className="post-body">{p.body}</div>
+            <div className="post-actions social-actions">
+              <button className="post-action">♡ Curtir</button>
+              <button className="post-action">◌ Comentar</button>
+              <button className="post-action">↗ Compartilhar</button>
+              <button className="post-action">⌑ Salvar</button>
+            </div>
           </article>)
         }
       </section>
