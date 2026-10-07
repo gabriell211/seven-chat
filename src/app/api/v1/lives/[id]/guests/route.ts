@@ -2,12 +2,29 @@ import { NextResponse } from "next/server";
 import { and, count, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { liveGuests, liveSessions, notifications, users } from "@/db/schema";
+import { liveGuests, liveSessions, notifications, profiles, users } from "@/db/schema";
 import { requireRequestSession } from "@/lib/auth";
 import { publishRealtimeBestEffort } from "@/lib/realtime";
 import { areUsersBlocked } from "@/services/social-guard";
 
 const schema=z.object({userId:z.uuid()});
+
+export async function GET(req:Request,{params}:{params:Promise<{id:string}>}){
+  try{
+    const session=await requireRequestSession(req),{id}=await params;
+    const [live]=await db.select({hostId:liveSessions.hostId}).from(liveSessions).where(eq(liveSessions.id,id)).limit(1);
+    if(!live||live.hostId!==session.userId)return NextResponse.json({error:{code:"HOST_ONLY",message:"Somente o host vê pedidos e convidados."}},{status:403});
+    const data=await db.select({
+      userId:users.id,username:users.username,displayName:profiles.displayName,
+      status:liveGuests.status,role:liveGuests.role,joinedAt:liveGuests.joinedAt
+    }).from(liveGuests)
+      .innerJoin(users,eq(liveGuests.userId,users.id))
+      .innerJoin(profiles,eq(users.id,profiles.userId))
+      .where(eq(liveGuests.liveId,id));
+    return NextResponse.json({data});
+  }catch{return NextResponse.json({error:{code:"UNAUTHORIZED",message:"Faça login."}},{status:401});}
+}
+
 export async function POST(req:Request,{params}:{params:Promise<{id:string}>}){
   try{
     const session=await requireRequestSession(req),{id}=await params,parsed=schema.safeParse(await req.json().catch(()=>null));
