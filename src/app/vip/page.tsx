@@ -1,3 +1,4 @@
+import "./vip.css";
 import { AppShell } from "@/components/app-shell";
 import { CheckoutButton } from "@/components/checkout-button";
 import { getSevenVipPlans, SEVEN_VIP_30D, SEVEN_VIP_MONTHLY } from "@/services/vip-catalog";
