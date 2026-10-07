@@ -38,6 +38,7 @@ export function LiveExperience({
   const [pkOpen,setPkOpen]=useState(false);
   const [guestOpen,setGuestOpen]=useState(false);
   const [fanOpen,setFanOpen]=useState(false);
+  const [moreOpen,setMoreOpen]=useState(false);
   const [guestQuery,setGuestQuery]=useState("");
   const [guestResults,setGuestResults]=useState<Array<{id:string;username:string;displayName:string}>>([]);
   const [hostGuests,setHostGuests]=useState<GuestEntry[]>([]);
@@ -223,6 +224,35 @@ export function LiveExperience({
     finally{setBusy(false);}
   }
 
+  async function setModerator(userId:string){
+    try{
+      setBusy(true);setError("");
+      await api("/api/v1/lives/"+live.id+"/moderators/"+userId,{method:"PUT"});
+      setError("Moderador adicionado.");
+    }catch(e){setError(e instanceof Error?e.message:"Falha ao definir moderador.");}
+    finally{setBusy(false);}
+  }
+
+  async function reportLive(reason:"spam"|"harassment"|"sexual"|"violence"|"other"){
+    if(!loggedIn){location.href="/login";return;}
+    try{
+      setBusy(true);setError("");
+      await api("/api/v1/reports",{method:"POST",body:JSON.stringify({targetType:"live",targetId:live.id,reason})});
+      setMoreOpen(false);setError("Denúncia enviada para análise.");
+    }catch(e){setError(e instanceof Error?e.message:"Falha ao denunciar.");}
+    finally{setBusy(false);}
+  }
+
+  async function blockHost(){
+    if(!loggedIn){location.href="/login";return;}
+    try{
+      setBusy(true);setError("");
+      await api("/api/v1/users/"+live.hostId+"/block",{method:"POST"});
+      setMoreOpen(false);onClose();
+    }catch(e){setError(e instanceof Error?e.message:"Falha ao bloquear usuário.");}
+    finally{setBusy(false);}
+  }
+
   async function startBattle(opponentLiveId:string){
     try{
       setBusy(true);setError("");
@@ -340,6 +370,7 @@ export function LiveExperience({
         {live.isHost&&<button onClick={()=>setGuestOpen(v=>!v)} title="Multi-convidados">＋<small>Convidados</small>{requestedGuests.length>0&&<i>{requestedGuests.length}</i>}</button>}
         {live.isHost&&!battle&&<button onClick={()=>setPkOpen(v=>!v)} title="Batalha">⚔<small>PK</small></button>}
         <button onClick={()=>void shareLive()} title="Compartilhar">↗<small>Compartilhar</small></button>
+        {!live.isHost&&<button onClick={()=>setMoreOpen(true)} title="Mais opções">•••<small>Mais</small></button>}
       </div>
 
       <form className="seven-live-compose" onSubmit={sendComment}>
@@ -392,7 +423,7 @@ export function LiveExperience({
           {activeGuests.map(v=><div className="live-guest-row" key={v.userId}>
             <div className="avatar sm">{v.displayName[0]?.toUpperCase()}</div>
             <div><b>{v.displayName}</b><span>{v.status==="accepted"?"No palco":"Convite enviado"}</span></div>
-            <button className="button secondary compact" disabled={busy} onClick={()=>void hostGuestAction(v.userId,"remove")}>Remover</button>
+            <div className="row"><button className="button secondary compact" disabled={busy} onClick={()=>void setModerator(v.userId)}>Mod</button><button className="button secondary compact" disabled={busy} onClick={()=>void hostGuestAction(v.userId,"remove")}>Remover</button></div>
           </div>)}
         </div>}
 
@@ -400,6 +431,18 @@ export function LiveExperience({
           <strong>Convidar alguém</strong>
           <div className="row"><input className="input" value={guestQuery} onChange={e=>setGuestQuery(e.target.value)} placeholder="Nome ou @usuário"/><button className="button compact" onClick={()=>void searchGuests()} disabled={busy||guestQuery.trim().length<2}>Buscar</button></div>
           <div className="seven-live-opponents">{guestResults.map(v=><button key={v.id} disabled={busy} onClick={()=>void inviteGuest(v.id)}><div className="avatar sm">{v.displayName[0]?.toUpperCase()}</div><div><strong>{v.displayName}</strong><small>@{v.username}</small></div><span>Convidar</span></button>)}</div>
+        </div>
+      </div>}
+
+      {moreOpen&&!live.isHost&&<div className="seven-live-sheet seven-live-more-sheet">
+        <div className="row between"><div><span className="eyebrow">SEGURANÇA</span><h3>Mais opções</h3></div><button className="seven-live-close" onClick={()=>setMoreOpen(false)}>×</button></div>
+        <div className="live-more-actions">
+          <button onClick={()=>void reportLive("spam")}>Denunciar spam</button>
+          <button onClick={()=>void reportLive("harassment")}>Denunciar assédio</button>
+          <button onClick={()=>void reportLive("sexual")}>Conteúdo sexual</button>
+          <button onClick={()=>void reportLive("violence")}>Violência</button>
+          <button onClick={()=>void reportLive("other")}>Outro motivo</button>
+          <button className="danger" onClick={()=>void blockHost()}>Bloquear @{live.hostUsername}</button>
         </div>
       </div>}
 
