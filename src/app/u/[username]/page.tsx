@@ -24,9 +24,10 @@ export default async function PublicProfile({params}:{params:Promise<{username:s
 
   if(!profile)notFound();
 
-  const [[followersCount],[followingCount],userPosts,followingRow]=await Promise.all([
+  const [[followersCount],[followingCount],[postCount],userPosts,followingRow]=await Promise.all([
     db.select({value:count()}).from(follows).where(eq(follows.followingId,profile.id)),
     db.select({value:count()}).from(follows).where(eq(follows.followerId,profile.id)),
+    db.select({value:count()}).from(posts).where(and(eq(posts.authorId,profile.id),eq(posts.visibility,"public"))),
     db.select({id:posts.id,body:posts.body,createdAt:posts.createdAt})
       .from(posts).where(and(eq(posts.authorId,profile.id),eq(posts.visibility,"public")))
       .orderBy(desc(posts.createdAt)).limit(20),
@@ -42,9 +43,9 @@ export default async function PublicProfile({params}:{params:Promise<{username:s
       <div className="profile-cover" style={profile.bannerUrl?{backgroundImage:`linear-gradient(180deg,transparent,rgba(0,0,0,.25)),url("${profile.bannerUrl}")`}:undefined}/>
       <div className="profile-main">
         <div className="public-profile-top">
-          <div className="avatar lg">{profile.displayName[0]?.toUpperCase()}</div>
+          <div className="avatar lg" style={profile.avatarUrl?{backgroundImage:`url("${profile.avatarUrl}")`,backgroundSize:"cover",backgroundPosition:"center"}:undefined}>{profile.avatarUrl?"":profile.displayName[0]?.toUpperCase()}</div>
           <div className="public-profile-actions">
-            {isMe?<Link className="button secondary" href="/settings">Editar perfil</Link>:session?<FollowButton userId={profile.id} initialFollowing={followingRow.length>0}/>:<Link className="button" href="/login">Entrar para seguir</Link>}
+            {isMe?<Link className="button secondary" href="/settings#profile">Editar perfil</Link>:session?<FollowButton userId={profile.id} initialFollowing={followingRow.length>0}/>:<Link className="button" href="/login">Entrar para seguir</Link>}
             {!isMe&&session&&<StartChatButton userId={profile.id}/>}
           </div>
         </div>
@@ -54,7 +55,7 @@ export default async function PublicProfile({params}:{params:Promise<{username:s
         <div className="public-profile-stats">
           <div><strong>{followersCount?.value??0}</strong><span>seguidores</span></div>
           <div><strong>{followingCount?.value??0}</strong><span>seguindo</span></div>
-          <div><strong>{userPosts.length}</strong><span>publicações</span></div>
+          <div><strong>{postCount?.value??0}</strong><span>publicações</span></div>
         </div>
         <div className="profile-meta">
           {profile.region&&<span className="pill">{profile.region}</span>}
