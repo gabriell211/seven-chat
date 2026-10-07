@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { desc, eq } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
+import { ChatThreadClient } from "@/components/chat-thread-client";
 import { requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { conversationMembers, conversations, messages } from "@/db/schema";
@@ -24,7 +25,7 @@ export default async function ChatPage({searchParams}:{searchParams:Promise<Reco
 
   return <AppShell>
     <div className="page-heading">
-      <div><span className="eyebrow">MENSAGENS</span><h1>Chat</h1><p className="muted">Converse em tempo real com seus contatos e grupos.</p></div>
+      <div><span className="eyebrow">MENSAGENS</span><h1>Chat</h1><p className="muted">Converse com seus contatos e grupos com atualização automática.</p></div>
       <Link className="button secondary compact" href="/explore">Nova conversa</Link>
     </div>
 
@@ -51,10 +52,7 @@ export default async function ChatPage({searchParams}:{searchParams:Promise<Reco
             {[...rows].reverse().map(m=><div key={m.id} className={"bubble "+(m.senderId===session.userId?"me":"")}>{m.body??("["+m.type+"]")}</div>)}
             {rows.length===0&&<div className="empty" style={{minHeight:220}}><div><strong>Comece a conversa.</strong><p>Envie a primeira mensagem abaixo.</p></div></div>}
           </div>
-          <form className="message-form" action={"/api/conversations/"+active.id+"/messages"} method="post">
-            <input className="input" name="body" maxLength={8000} placeholder="Escreva uma mensagem..." required/>
-            <button className="button">Enviar</button>
-          </form>
+          <ChatThreadClient conversationId={active.id}/>
         </>}
       </section>
     </div>
