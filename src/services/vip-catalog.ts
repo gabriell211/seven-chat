@@ -29,8 +29,8 @@ async function ensureVipInfrastructure(){
 
     create table if not exists purchase_intents (
       id uuid primary key default gen_random_uuid(),
-      purchaser_user_id uuid not null references users(id),
-      beneficiary_user_id uuid not null references users(id),
+      purchaser_user_id text not null references users(id),
+      beneficiary_user_id text not null references users(id),
       provider text not null,
       product_type text not null,
       sku text not null,
@@ -44,7 +44,7 @@ async function ensureVipInfrastructure(){
 
     create table if not exists payments (
       id uuid primary key default gen_random_uuid(),
-      user_id uuid not null references users(id),
+      user_id text not null references users(id),
       provider text not null,
       product_type text not null,
       sku text not null,
@@ -63,7 +63,7 @@ async function ensureVipInfrastructure(){
 
     create table if not exists vip_subscriptions (
       id uuid primary key default gen_random_uuid(),
-      user_id uuid not null references users(id),
+      user_id text not null references users(id),
       plan text not null,
       status text not null,
       provider text not null,
@@ -76,8 +76,8 @@ async function ensureVipInfrastructure(){
 
     create table if not exists vip_gifts (
       id uuid primary key default gen_random_uuid(),
-      sender_id uuid not null references users(id),
-      receiver_id uuid not null references users(id),
+      sender_id text not null references users(id),
+      receiver_id text not null references users(id),
       plan_id uuid not null references vip_plans(id),
       payment_id uuid not null references payments(id),
       starts_at timestamptz not null,
