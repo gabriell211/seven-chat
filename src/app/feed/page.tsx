@@ -2,6 +2,7 @@ import Link from "next/link";
 import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import { AppShell } from "@/components/app-shell";
 import { PostActions } from "@/components/post-actions";
+import { PostComposer } from "@/components/post-composer";
 import { StoryStrip, type TextStory } from "@/components/story-strip";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
@@ -66,17 +67,7 @@ export default async function FeedPage(){
 
     <div className="grid two">
       <section className="grid">
-        {session&&<form action="/api/posts" method="post" className="card composer">
-          <div className="composer-head">
-            <div className="avatar sm">{session.username[0]?.toUpperCase()}</div>
-            <div><strong>@{session.username}</strong><div className="muted" style={{fontSize:12}}>Compartilhe uma publicação de texto</div></div>
-          </div>
-          <textarea className="textarea" name="body" maxLength={4000} placeholder="No que você está pensando?" required/>
-          <div className="composer-actions">
-            <span className="muted" style={{fontSize:12}}>Publicação pública · texto</span>
-            <button className="button compact">Publicar</button>
-          </div>
-        </form>}
+        {session&&<PostComposer username={session.username}/>}
 
         {feed.length===0?
           <div className="card empty"><div><div className="empty-icon">✦</div><strong>Seu feed está pronto para ganhar vida.</strong><p>Publique algo ou encontre pessoas para começar a acompanhar novidades por aqui.</p><Link className="button compact" href="/explore">Explorar comunidade</Link></div></div>
