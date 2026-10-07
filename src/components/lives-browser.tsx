@@ -6,7 +6,7 @@ import { LiveExperience } from "@/components/live-experience";
 
 type Live={
   id:string;title:string;category:string|null;viewerCount:number;peakViewers:number;
-  thumbnailUrl:string|null;hostId:string;hostUsername:string;hostDisplayName:string;isHost:boolean;
+  thumbnailUrl:string|null;hostId:string;hostUsername:string;hostDisplayName:string;isHost:boolean;canPublish:boolean;initialFollowing:boolean;
 };
 type Gift={id:string;name:string;priceDiamonds:number;category:string;animationType:string;assetUrl:string|null};
 
