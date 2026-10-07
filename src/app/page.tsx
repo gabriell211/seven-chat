@@ -49,7 +49,8 @@ export default async function LandingPage(){
         </div>
       </div>
 
-      <div className="landing-phone-wrap" aria-label="Prévia do Seven Chat">
+      <div className="landing-phone-wrap" aria-label="Prévia ilustrativa do Seven Chat">
+        <span className="landing-demo-label">DEMONSTRAÇÃO VISUAL</span>
         <div className="landing-glow"/>
         <div className="landing-phone">
           <div className="phone-top"><span>Seven Chat</span><span className="live-chip">AO VIVO</span></div>
@@ -104,6 +105,7 @@ export default async function LandingPage(){
         <Link className="button" href="/register">Criar minha conta</Link>
       </div>
       <div className="landing-live-card">
+        <span className="landing-demo-label live-demo-label">EXEMPLO DE INTERFACE</span>
         <div className="live-preview-top"><div className="userrow"><div className="avatar">S</div><div><strong>Seven Creator</strong><span className="muted">@sevencreator</span></div></div><span className="live-chip">12,8K</span></div>
         <div className="live-preview-stage">
           <div className="battle-score"><b>12.450</b><span>PK</span><b>11.980</b></div>
