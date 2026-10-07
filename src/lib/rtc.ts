@@ -2,6 +2,10 @@ import { AccessToken } from "livekit-server-sdk";
 
 export type RtcGrant={room:string;identity:string;canPublish:boolean;canSubscribe:boolean};
 
+export function isRtcConfigured(){
+  return Boolean(process.env.LIVEKIT_API_KEY&&process.env.LIVEKIT_API_SECRET&&process.env.LIVEKIT_URL);
+}
+
 export async function createRtcToken(grant:RtcGrant):Promise<{token:string;url:string}>{
   const apiKey=process.env.LIVEKIT_API_KEY;
   const apiSecret=process.env.LIVEKIT_API_SECRET;
