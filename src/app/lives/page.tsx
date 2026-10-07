@@ -4,11 +4,13 @@ import { LivesBrowser } from "@/components/lives-browser";
 import { gifts, liveSessions, users, profiles } from "@/db/schema";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/auth";
+import { isRtcConfigured } from "@/lib/rtc";
 
 export const dynamic="force-dynamic";
 
 export default async function Lives(){
   const session=await getSession();
+  const rtcReady=isRtcConfigured();
   const [rows,giftRows]=process.env.DATABASE_URL?await Promise.all([
     db.select({
       id:liveSessions.id,title:liveSessions.title,category:liveSessions.category,
@@ -32,9 +34,10 @@ export default async function Lives(){
 
   return <AppShell>
     <div className="page-heading">
-      <div><span className="eyebrow">SEVEN LIVE</span><h1>Ao vivo agora</h1><p className="muted">Assista, converse, envie gifts, participe como convidado ou abra sua própria transmissão.</p></div>
-      <span className="live-chip">{data.length} AO VIVO</span>
+      <div><span className="eyebrow">SEVEN LIVE</span><h1>Ao vivo agora</h1><p className="muted">Transmissões, comentários, gifts e batalhas conectados ao backend real.</p></div>
+      <span className="live-chip">{rtcReady?data.length+" AO VIVO":"RTC OFFLINE"}</span>
     </div>
-    <LivesBrowser lives={data} gifts={giftRows} loggedIn={Boolean(session)}/>
+    {!rtcReady&&<div className="error">Vídeo ao vivo está desativado porque o servidor LiveKit ainda não está configurado no Vercel. Nenhuma live falsa será criada.</div>}
+    <LivesBrowser lives={data} gifts={giftRows} loggedIn={Boolean(session)} rtcReady={rtcReady}/>
   </AppShell>;
 }
