@@ -16,7 +16,7 @@ export async function AppShell({children}:{children:React.ReactNode}){
 
   return <div className="shell">
     <aside className="sidebar">
-      <Link href="/" className="brand" aria-label="Seven Chat">
+      <Link href="/feed" className="brand" aria-label="Seven Chat">
         <BrandMark/>
         <span className="brand-copy"><b>Seven</b><strong>Chat</strong></span>
       </Link>
