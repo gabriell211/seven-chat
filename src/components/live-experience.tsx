@@ -28,6 +28,9 @@ export function LiveExperience({
   const [comment,setComment]=useState("");
   const [giftOpen,setGiftOpen]=useState(false);
   const [pkOpen,setPkOpen]=useState(false);
+  const [guestOpen,setGuestOpen]=useState(false);
+  const [guestQuery,setGuestQuery]=useState("");
+  const [guestResults,setGuestResults]=useState<Array<{id:string;username:string;displayName:string}>>([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState("");
   const opponents=useMemo(()=>allLives.filter(v=>v.id!==live.id),[allLives,live.id]);
@@ -66,6 +69,25 @@ export function LiveExperience({
       })});
       setGiftOpen(false);
     }catch(e){setError(e instanceof Error?e.message:"Falha ao enviar gift.");}
+    finally{setBusy(false);}
+  }
+
+  async function searchGuests(){
+    const q=guestQuery.trim();if(q.length<2)return;
+    try{
+      setBusy(true);setError("");
+      const body=await api<{data:{users:Array<{id:string;username:string;displayName:string}>}}>(`/api/v1/search?q=${encodeURIComponent(q)}`);
+      setGuestResults(body.data.users.filter(v=>v.id!==live.hostId));
+    }catch(e){setError(e instanceof Error?e.message:"Falha ao buscar usuários.");}
+    finally{setBusy(false);}
+  }
+
+  async function inviteGuest(userId:string){
+    try{
+      setBusy(true);setError("");
+      await api(`/api/v1/lives/${live.id}/guests`,{method:"POST",body:JSON.stringify({userId})});
+      setError("Convite enviado.");
+    }catch(e){setError(e instanceof Error?e.message:"Falha ao convidar.");}
     finally{setBusy(false);}
   }
 
@@ -123,6 +145,7 @@ export function LiveExperience({
 
       <div className="seven-live-rail">
         <button onClick={()=>setGiftOpen(v=>!v)} title="Enviar gift">◇<small>Gift</small></button>
+        {live.isHost&&<button onClick={()=>setGuestOpen(v=>!v)} title="Convidar participante">＋<small>Convidar</small></button>}
         {live.isHost&&<button onClick={()=>setPkOpen(v=>!v)} title="Iniciar batalha">⚔<small>PK</small></button>}
         <button onClick={()=>void shareLive()} title="Compartilhar">↗<small>Compartilhar</small></button>
       </div>
@@ -141,6 +164,12 @@ export function LiveExperience({
             <span className="gift-icon">◇</span><strong>{g.name}</strong><small>◇ {g.priceDiamonds}</small>
           </button>):<p className="muted">Nenhum gift ativo.</p>}
         </div>
+      </div>}
+
+      {guestOpen&&live.isHost&&<div className="seven-live-sheet">
+        <div className="row between"><div><span className="eyebrow">CONVIDADOS</span><h3>Convidar para a live</h3></div><button className="seven-live-close" onClick={()=>setGuestOpen(false)}>×</button></div>
+        <div className="row" style={{marginTop:12}}><input className="input" value={guestQuery} onChange={e=>setGuestQuery(e.target.value)} placeholder="Nome ou @usuário"/><button className="button compact" onClick={()=>void searchGuests()} disabled={busy||guestQuery.trim().length<2}>Buscar</button></div>
+        <div className="seven-live-opponents">{guestResults.length?guestResults.map(v=><button key={v.id} disabled={busy} onClick={()=>void inviteGuest(v.id)}><div className="avatar sm">{v.displayName[0]?.toUpperCase()}</div><div><strong>{v.displayName}</strong><small>@{v.username}</small></div><span>Convidar</span></button>):<p className="muted">Busque uma pessoa para enviar o convite.</p>}</div>
       </div>}
 
       {pkOpen&&live.isHost&&<div className="seven-live-sheet">
