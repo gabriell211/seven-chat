@@ -13,19 +13,19 @@ export default async function ProfilePage(){
 
   const [profile]=await db.select({
     username:users.username,displayName:profiles.displayName,bio:profiles.bio,
-    isVip:profiles.isVip,region:profiles.region,languages:profiles.languages,interests:profiles.interests
+    isVip:profiles.isVip,region:profiles.region,languages:profiles.languages,interests:profiles.interests,avatarUrl:profiles.avatarUrl,bannerUrl:profiles.bannerUrl
   }).from(users).innerJoin(profiles,eq(users.id,profiles.userId)).where(eq(users.id,session.userId)).limit(1);
 
   return <AppShell>
     <div className="page-heading">
       <div><span className="eyebrow">PERFIL</span><h1>Seu espaço</h1><p className="muted">Mostre quem você é e personalize sua presença.</p></div>
-      <Link className="button secondary compact" href="/settings">Editar configurações</Link>
+      <Link className="button secondary compact" href="/settings#profile">Editar perfil</Link>
     </div>
     {profile?<div className="grid">
       <section className="card profile-hero">
-        <div className="profile-cover"/>
+        <div className="profile-cover" style={profile.bannerUrl?{backgroundImage:`linear-gradient(180deg,transparent,rgba(0,0,0,.25)),url("${profile.bannerUrl}")`}:undefined}/>
         <div className="profile-main">
-          <div className="avatar lg">{profile.displayName[0]?.toUpperCase()}</div>
+          <div className="avatar lg" style={profile.avatarUrl?{backgroundImage:`url("${profile.avatarUrl}")`,backgroundSize:"cover",backgroundPosition:"center"}:undefined}>{profile.avatarUrl?"":profile.displayName[0]?.toUpperCase()}</div>
           <div className="profile-title">
             <h2>{profile.displayName}</h2>
             {profile.isVip&&<span className="vip-badge">VIP</span>}
