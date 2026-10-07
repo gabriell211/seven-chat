@@ -7,6 +7,7 @@ import { profiles, roomMembers, rooms, users } from "@/db/schema";
 import { hashPassword, requireRequestSession } from "@/lib/auth";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { hasVipAtLeast } from "@/services/entitlements";
+import { isRtcConfigured } from "@/lib/rtc";
 
 const schema=z.object({
   title:z.string().trim().min(3).max(100),
@@ -27,12 +28,13 @@ export async function GET(){
     .innerJoin(users,eq(rooms.hostId,users.id))
     .innerJoin(profiles,eq(users.id,profiles.userId))
     .where(eq(rooms.status,"active")).orderBy(desc(rooms.createdAt)).limit(50);
-  return NextResponse.json({data});
+  return NextResponse.json({data,rtcConfigured:isRtcConfigured()});
 }
 export async function POST(req:Request){
   try{
     const session=await requireRequestSession(req);
     const limited=await enforceRateLimit(req,"write",session.userId);if(limited)return limited;
+    if(!isRtcConfigured())return NextResponse.json({error:{code:"RTC_NOT_CONFIGURED",message:"Salas de voz estão indisponíveis até o servidor RTC ser configurado."}},{status:503});
     const parsed=schema.safeParse(await req.json());
     if(!parsed.success)return NextResponse.json({error:{code:"VALIDATION_ERROR",message:"Sala inválida."}},{status:422});
     if(parsed.data.vipOnly&&!(await hasVipAtLeast(session.userId,"vip"))){
