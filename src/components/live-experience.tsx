@@ -6,7 +6,7 @@ import { FollowButton } from "@/components/follow-button";
 
 type Live={
   id:string;title:string;category:string|null;viewerCount:number;peakViewers:number;
-  thumbnailUrl:string|null;hostId:string;hostUsername:string;hostDisplayName:string;isHost:boolean;
+  thumbnailUrl:string|null;hostId:string;hostUsername:string;hostDisplayName:string;isHost:boolean;canPublish:boolean;initialFollowing:boolean;
 };
 type Gift={id:string;name:string;priceDiamonds:number;category:string;animationType:string;assetUrl:string|null};
 type Comment={id:string;body:string;pinned:boolean;createdAt:string;authorId:string;username:string;displayName:string};
@@ -97,12 +97,12 @@ export function LiveExperience({
 
   return <div className="seven-live-viewer">
     <div className="seven-live-stage">
-      <RtcExperience resourceType="live" resourceId={live.id} mode="video" canPublishLocal={live.isHost}/>
+      <RtcExperience resourceType="live" resourceId={live.id} mode="video" canPublishLocal={live.canPublish}/>
       <div className="seven-live-top">
         <div className="seven-live-host">
           <div className="avatar sm">{live.hostDisplayName[0]?.toUpperCase()}</div>
           <div><strong>{live.hostDisplayName}</strong><span>@{live.hostUsername}</span></div>
-          {!live.isHost&&loggedIn&&<FollowButton userId={live.hostId} initialFollowing={false}/>}
+          {!live.isHost&&loggedIn&&<FollowButton userId={live.hostId} initialFollowing={live.initialFollowing}/>}
         </div>
         <div className="seven-live-top-actions">
           <span className="live-chip">{live.viewerCount.toLocaleString("pt-BR")} assistindo</span>
