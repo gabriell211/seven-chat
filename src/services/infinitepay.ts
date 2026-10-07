@@ -1,11 +1,17 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { diamondPackages, purchaseIntents, users, vipPlans } from "@/db/schema";
+import { ensureSevenVipCatalog, isSevenVipCode, SEVEN_VIP_MONTHLY } from "@/services/vip-catalog";
 
 const API="https://api.checkout.infinitepay.io";
 export class InfinitePayError extends Error{constructor(public readonly code:string,message:string){super(message);}}
 function handle(){const value=process.env.INFINITEPAY_HANDLE?.trim().replace(/^\$/,"");if(!value)throw new InfinitePayError("INFINITEPAY_NOT_CONFIGURED","InfinitePay não configurada.");return value;}
 export async function createInfinitePayCheckout(input:{purchaserUserId:string;productType:"diamonds"|"vip";sku:string;beneficiaryUserId?:string;origin:string}){
+ if(input.productType==="vip"){
+  await ensureSevenVipCatalog();
+  if(!isSevenVipCode(input.sku))throw new InfinitePayError("PRODUCT_NOT_FOUND","Plano VIP indisponível.");
+  if(input.sku===SEVEN_VIP_MONTHLY)throw new InfinitePayError("RECURRING_STORE_ONLY","A assinatura mensal recorrente só pode ser contratada pela loja mobile.");
+ }
  const beneficiary=input.beneficiaryUserId??input.purchaserUserId;
  if(input.productType==="diamonds"&&beneficiary!==input.purchaserUserId)throw new InfinitePayError("DIAMONDS_NOT_GIFTABLE","Diamantes não podem ser comprados para outra conta.");
  const [target]=await db.select({id:users.id}).from(users).where(and(eq(users.id,beneficiary),eq(users.status,"active"))).limit(1);
