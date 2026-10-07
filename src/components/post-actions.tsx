@@ -4,9 +4,9 @@ import { FormEvent, useState } from "react";
 
 type Comment={id:string;body:string;createdAt:string;username:string;displayName:string};
 
-export function PostActions({postId,loggedIn}:{postId:string;loggedIn:boolean}){
-  const [liked,setLiked]=useState(false);
-  const [saved,setSaved]=useState(false);
+export function PostActions({postId,loggedIn,initialLiked=false,initialSaved=false}:{postId:string;loggedIn:boolean;initialLiked?:boolean;initialSaved?:boolean}){
+  const [liked,setLiked]=useState(initialLiked);
+  const [saved,setSaved]=useState(initialSaved);
   const [commentsOpen,setCommentsOpen]=useState(false);
   const [comments,setComments]=useState<Comment[]>([]);
   const [body,setBody]=useState("");
