@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 export type NotificationItem={
   id:string;type:string;entityType:string|null;entityId:string|null;
-  createdAt:string;readAt:string|null;actorName:string|null;actorUsername:string|null;
+  createdAt:string;readAt:string|null;actorName:string|null;actorUsername:string|null;payload:Record<string,unknown>;
 };
 
 function label(type:string){
@@ -38,6 +38,20 @@ export function NotificationsList({initial}:{initial:NotificationItem[]}){
   const [busy,setBusy]=useState(false);
   const unread=useMemo(()=>rows.filter(n=>!n.readAt).length,[rows]);
 
+  async function inviteAction(item:NotificationItem,action:"accept"|"reject"){
+    try{
+      setBusy(true);
+      let url:string|undefined;
+      if(item.type==="live_guest_invite"&&item.entityId)url="/api/v1/lives/"+item.entityId+"/guests/me";
+      if(item.type==="live_battle_invite"&&typeof item.payload.battleId==="string")url="/api/v1/lives/battles/"+item.payload.battleId;
+      if(!url)return;
+      const response=await fetch(url,{method:"PATCH",headers:{"content-type":"application/json"},body:JSON.stringify({action})});
+      if(!response.ok)return;
+      await mark(item.id);
+      if(action==="accept")location.href="/lives";
+    }finally{setBusy(false);}
+  }
+
   async function mark(id?:string){
     try{
       setBusy(true);
@@ -65,6 +79,7 @@ export function NotificationsList({initial}:{initial:NotificationItem[]}){
             <strong>{n.actorName?n.actorName+" "+label(n.type):label(n.type)}</strong>
             <span>{new Date(n.createdAt).toLocaleString("pt-BR")}</span>
           </div>
+          {(n.type==="live_guest_invite"||n.type==="live_battle_invite")&&!n.readAt&&<div className="notification-invite-actions"><button className="button compact" disabled={busy} onClick={(e)=>{e.preventDefault();e.stopPropagation();void inviteAction(n,"accept")}}>Aceitar</button><button className="button secondary compact" disabled={busy} onClick={(e)=>{e.preventDefault();e.stopPropagation();void inviteAction(n,"reject")}}>Recusar</button></div>}
           {!n.readAt&&<button className="notification-read" onClick={(e)=>{e.preventDefault();e.stopPropagation();void mark(n.id)}} aria-label="Marcar como lida"><span className="status-dot"/></button>}
         </>;
         return href?<Link href={href} onClick={()=>{if(!n.readAt)void mark(n.id)}} className={"notification-item "+(!n.readAt?"is-unread":"")} key={n.id}>{content}</Link>
