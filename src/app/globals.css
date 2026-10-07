@@ -446,3 +446,8 @@ a,button{-webkit-tap-highlight-color:transparent}
 
 
 .conversation-item.is-active{background:linear-gradient(90deg,rgba(139,92,246,.14),rgba(139,92,246,.04))!important;border:1px solid rgba(167,139,250,.12)}
+
+
+.feature-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;border:1px solid transparent}
+.feature-status.is-ready{color:#9ff2d0;background:rgba(52,211,153,.08);border-color:rgba(52,211,153,.14)}
+.feature-status.is-pending{color:#f4cf8b;background:rgba(245,158,11,.08);border-color:rgba(245,158,11,.14)}
