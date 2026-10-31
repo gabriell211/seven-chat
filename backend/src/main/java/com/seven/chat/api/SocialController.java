@@ -43,6 +43,23 @@ public class SocialController {
         return social.updateProfile(who(principal), input);
     }
 
+    @GetMapping("/users/{id}/followers")
+    public java.util.Map<String, List<SocialDto.Profile>> followers(
+            Authentication principal, @PathVariable UUID id) {
+        return java.util.Map.of("data", social.relations(who(principal), id, true));
+    }
+
+    @GetMapping("/users/{id}/following")
+    public java.util.Map<String, List<SocialDto.Profile>> following(
+            Authentication principal, @PathVariable UUID id) {
+        return java.util.Map.of("data", social.relations(who(principal), id, false));
+    }
+
+    @GetMapping("/users/me/blocks")
+    public java.util.Map<String, List<SocialDto.Profile>> blocks(Authentication principal) {
+        return java.util.Map.of("data", social.myBlocks(who(principal)));
+    }
+
     @PostMapping("/users/{id}/follow")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void follow(Authentication principal, @PathVariable UUID id) {
@@ -115,6 +132,12 @@ public class SocialController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteComment(Authentication principal, @PathVariable long id) {
         social.deleteComment(who(principal), id);
+    }
+
+    @PostMapping("/posts/{id}/edit")
+    public ApiDto.Post editPost(Authentication principal, @PathVariable long id,
+                                @Valid @RequestBody ApiDto.CreatePost input) {
+        return social.editPost(who(principal), id, input.body());
     }
 
     @DeleteMapping("/posts/{id}")
