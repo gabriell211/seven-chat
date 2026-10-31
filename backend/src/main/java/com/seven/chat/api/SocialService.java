@@ -313,12 +313,16 @@ public class SocialService {
             return previous;
         }
         GeneratedKeyHolder key = new GeneratedKeyHolder();
-        sql.update("INSERT INTO direct_messages " +
-                        "(sender_id,receiver_id,client_mutation_id,body) " +
-                        "VALUES (:sender,:receiver,:mutation,:body)",
-                new MapSqlParameterSource().addValue("sender", viewer)
-                        .addValue("receiver", other).addValue("mutation", input.clientMutationId())
-                        .addValue("body", body), key, new String[]{"id"});
+        try {
+            sql.update("INSERT INTO direct_messages " +
+                            "(sender_id,receiver_id,client_mutation_id,body) " +
+                            "VALUES (:sender,:receiver,:mutation,:body)",
+                    new MapSqlParameterSource().addValue("sender", viewer)
+                            .addValue("receiver", other).addValue("mutation", input.clientMutationId())
+                            .addValue("body", body), key, new String[]{"id"});
+        } catch (DataIntegrityViolationException collision) {
+            throw new ApiExceptions.Conflict();
+        }
         if (key.getKey() == null) throw new IllegalStateException("Mensagem não persistida.");
         long id = key.getKey().longValue();
         notifyAccount(other, viewer, "message", id);
