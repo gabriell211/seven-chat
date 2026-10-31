@@ -54,7 +54,7 @@ jobs:
           mvn -B -ntp -f backend/pom.xml clean verify 2>&1 | tee /tmp/seven-maven-test.log
           python3 scripts/check_ci_warnings.py /tmp/seven-maven-test.log
       - name: Preserve test reports on failure
-        if: always()
+        if: ${{ always() && hashFiles('backend/target/surefire-reports/**') != '' }}
         uses: actions/upload-artifact@v6
         with:
           name: java-api-test-reports
