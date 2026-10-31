@@ -30,6 +30,13 @@ public class ApiErrorHandler {
         return response(HttpStatus.CONFLICT, "CONFLICT", "E-mail ou usuário já cadastrado.");
     }
 
+    @ExceptionHandler(ApiExceptions.TooManyRequests.class)
+    ResponseEntity<ApiDto.Error> tooManyRequests() {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", "900")
+                .body(new ApiDto.Error("RATE_LIMITED", "Muitas tentativas. Tente novamente mais tarde."));
+    }
+
     @ExceptionHandler(ApiExceptions.InvalidInput.class)
     ResponseEntity<ApiDto.Error> invalid(ApiExceptions.InvalidInput ex) {
         return response(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_INPUT", ex.getMessage());
