@@ -101,8 +101,9 @@ class RealHttpEndToEndTest {
         assertTrue(who.body().contains(firstHandle));
 
         String mutation = UUID.randomUUID().toString();
-        String publish = "{\\"clientMutationId\\":\\"" + mutation +
-                "\\",\\"body\\":\\"Publicação real de homologação\\"}";
+        String publish = """
+                {"clientMutationId":"%s","body":"Publicação real de homologação"}
+                """.formatted(mutation);
         Response published = call("POST", "/posts", firstToken, publish);
         assertEquals(201, published.status(), published.body());
         String postId = fieldNumber(published.body(), "id");
@@ -117,9 +118,11 @@ class RealHttpEndToEndTest {
         Response follow = call("POST", "/users/" + secondId + "/follow", firstToken, null);
         assertEquals(204, follow.status(), follow.body());
 
+        String messagePayload = """
+                {"clientMutationId":"%s","body":"Mensagem persistida via HTTP"}
+                """.formatted(UUID.randomUUID());
         Response message = call("POST", "/conversations/" + secondId + "/messages",
-                firstToken, "{\\"clientMutationId\\":\\"" + UUID.randomUUID() +
-                "\\",\\"body\\":\\"Mensagem persistida via HTTP\\"}");
+                firstToken, messagePayload);
         assertEquals(201, message.status(), message.body());
         Response inbox = call("GET", "/conversations", secondToken, null);
         assertEquals(200, inbox.status(), inbox.body());
@@ -145,9 +148,9 @@ class RealHttpEndToEndTest {
     }
 
     private static String registration(String handle, String password) {
-        return "{\\"handle\\":\\"" + handle +
-                "\\",\\"email\\":\\"" + handle +
-                "@seven.test\\",\\"displayName\\":\\"Teste de homologação\\",\\"password\\":\\"" +
-                password + "\\"}";
+        return """
+                {"handle":"%s","email":"%s@seven.test","displayName":"Teste de homologação","password":"%s"}
+                """.formatted(handle, handle, password);
     }
+
 }
