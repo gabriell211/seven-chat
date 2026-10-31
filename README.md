@@ -4,7 +4,7 @@ Aplicativo Android **nativo em Java**. Projeto independente, sem dependência de
 
 ## Estado real
 
-**Versão 0.1.0 (protótipo local, não produção).** Interface de navegação e funcionalidades locais:
+**Versão 0.2.0-alpha.1 (protótipo local, não produção).** Interface de navegação e funcionalidades locais:
 - Feed local: publicações de texto e fotos, curtir, salvar, buscar, comentar, editar, arquivar, restaurar, compartilhar pelo Android e excluir.
 - Escolha de foto pelo seletor de documentos Android (permissão persistida da URI). Rascunhos salvos no SQLite ao sair da tela e ao deixar o aplicativo.
 - Perfil local: editar nome e biografia.
