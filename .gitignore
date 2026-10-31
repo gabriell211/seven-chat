@@ -13,3 +13,10 @@ captures/
 # OS
 .DS_Store
 Thumbs.db
+
+# Java backend
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+.env
+.env.*
+!.env.example
