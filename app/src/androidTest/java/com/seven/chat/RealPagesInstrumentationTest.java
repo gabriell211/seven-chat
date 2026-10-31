@@ -27,7 +27,6 @@ import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
 import static androidx.test.espresso.matcher.ViewMatchers.withHint;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.isA;
 import android.widget.ScrollView;
@@ -119,7 +118,7 @@ public final class RealPagesInstrumentationTest {
                     .perform(replaceText(peerHandle), closeSoftKeyboard());
             onView(withText("Pesquisar")).perform(click());
             awaitText("Resultados");
-            onView(withText(containsString("@" + peerHandle))).perform(click());
+            onView(withText("Conta real " + peerHandle + "  @" + peerHandle)).perform(click());
             awaitText("Seguir");
             onView(withText("Seguir")).perform(click());
             awaitText("Deixar de seguir");
