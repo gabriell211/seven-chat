@@ -27,6 +27,8 @@ jobs:
           java-version: '21'
           cache: maven
           cache-dependency-path: backend/pom.xml
+      - name: Auditar navegação Android e contratos
+        run: python3 scripts/check_pages.py
       - name: Build and integration tests
         run: mvn -B -ntp -f backend/pom.xml clean verify
       - name: Preserve test reports on failure
