@@ -1,72 +1,79 @@
 #!/usr/bin/env python3
-"""Asset check, separate from APK build and visual device homologation."""
+"""Guard the single SVG master against diverging Android app icon artwork."""
 from pathlib import Path
 from xml.etree import ElementTree as ET
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-BRANDING = ROOT / "branding"
-RES = ROOT / "app/src/main/res"
 ANDROID = "{http://schemas.android.com/apk/res/android}"
-
-svg_files = [
-    BRANDING / "seven-chat-light.svg",
-    BRANDING / "seven-chat-dark.svg",
-    BRANDING / "seven-chat-light-symbol.svg",
-    BRANDING / "seven-chat-dark-symbol.svg",
-]
-android_files = [
-    RES / "drawable/ic_launcher.xml",
-    RES / "drawable-night/ic_launcher.xml",
-    RES / "drawable/seven_launcher_foreground.xml",
-    RES / "drawable-night/seven_launcher_foreground.xml",
-    RES / "drawable/seven_launcher_monochrome.xml",
-    RES / "drawable-anydpi-v26/ic_launcher.xml",
-    RES / "values/colors.xml",
-    RES / "values-night/colors.xml",
-]
+SVG = "{http://www.w3.org/2000/svg}"
 errors = []
 
-for path in svg_files + android_files:
+def parse(relative):
     try:
-        ET.parse(path)
-    except (ET.ParseError, OSError) as exc:
-        errors.append(f"{path.relative_to(ROOT)}: invalid XML ({exc})")
+        return ET.parse(ROOT / relative).getroot()
+    except (OSError, ET.ParseError) as ex:
+        errors.append(f"{relative}: {ex}")
+        return None
 
-for path in svg_files:
-    if not path.exists():
+def ribbons(root, name, attr):
+    if root is None:
+        return []
+    return [node.get(attr) for node in root.iter(name)
+            if (node.get(attr) or "").startswith(("M 36 78 ", "M 72.9 29.7 "))]
+
+master = None
+for theme in ["light", "dark"]:
+    svg = parse(f"branding/seven-chat-icon-{theme}.svg")
+    paths = ribbons(svg, SVG + "path", "d")
+    if len(paths) != 2:
+        errors.append(f"{theme} SVG must contain exactly two master ribbons")
+    if master is None:
+        master = paths
+    elif master != paths:
+        errors.append(f"SVG ribbon geometry differs between {theme} themes")
+
+for relative in (
+    "app/src/main/res/drawable/ic_launcher.xml",
+    "app/src/main/res/drawable-night/ic_launcher.xml",
+    "app/src/main/res/drawable/ic_launcher_foreground.xml",
+    "app/src/main/res/drawable-night/ic_launcher_foreground.xml",
+    "app/src/main/res/drawable/ic_launcher_monochrome.xml",
+    "app/src/main/res/mipmap-anydpi/ic_launcher.xml",
+    "app/src/main/res/mipmap-night-anydpi/ic_launcher.xml",
+):
+    xml = parse(relative)
+    if xml is None:
         continue
-    text = path.read_text(encoding="utf-8")
-    if text.count("<circle ") != 3 or "viewBox=\"0 0 1024 1024\"" not in text:
-        errors.append(f"{path.name}: missing three dots or scalable icon canvas")
-    if "<text" in text.lower():
-        errors.append(f"{path.name}: icon must be standalone symbol, no lettering")
+    if xml.tag != "vector":
+        errors.append(f"{relative}: not a vector drawable")
+    if ribbons(xml, "path", ANDROID + "pathData") != master:
+        errors.append(f"{relative}: artwork does not match master SVG")
 
-icon = RES / "drawable-anydpi-v26/ic_launcher.xml"
-if icon.exists():
-    root = ET.parse(icon).getroot()
-    if root.tag != "adaptive-icon":
-        errors.append("API 26 launcher is not an adaptive-icon")
-    for tag in ["background", "foreground", "monochrome"]:
-        if root.find(tag) is None:
-            errors.append(f"adaptive launcher missing {tag}")
+adaptive = parse("app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml")
+if adaptive is not None:
+    expected = {"background": "@color/seven_launcher_background",
+                "foreground": "@drawable/ic_launcher_foreground",
+                "monochrome": "@drawable/ic_launcher_monochrome"}
+    actual = {tag.tag: tag.get(ANDROID + "drawable") for tag in adaptive}
+    if adaptive.tag != "adaptive-icon" or actual != expected:
+        errors.append("Adaptive icon is missing background, foreground or monochrome")
 
-for mode in ["values", "values-night"]:
-    f = RES / mode / "colors.xml"
-    if f.exists() and "seven_launcher_background" not in f.read_text(encoding="utf-8"):
-        errors.append(f"{mode}: missing launcher background")
+for folder in ["values", "values-night"]:
+    xml = parse(f"app/src/main/res/{folder}/colors.xml")
+    if xml is not None and not any(node.get("name") == "seven_launcher_background"
+                                   for node in xml.iter("color")):
+        errors.append(f"{folder}: missing adaptive background color")
 
-manifest = ROOT / "app/src/main/AndroidManifest.xml"
-if manifest.exists():
-    text = manifest.read_text(encoding="utf-8")
-    if '@drawable/ic_launcher' not in text:
-        errors.append("Manifest must point to stable launcher resource")
-else:
-    errors.append("AndroidManifest missing")
+manifest = parse("app/src/main/AndroidManifest.xml")
+if manifest is not None:
+    app = manifest.find("application")
+    if app is None or app.get(ANDROID + "icon") != "@mipmap/ic_launcher":
+        errors.append("Manifest does not reference the adaptive launcher")
 
 if errors:
-    print("Seven Chat brand check FAILED:")
-    for err in errors:
-        print(" -", err)
+    print("Seven Chat logo check FAILED:")
+    for issue in errors:
+        print(" -", issue)
     sys.exit(1)
-print("Seven Chat brand check OK: 4 vector SVG + 8 Android theme/adaptive resources")
+print("OK: two SVG masters and 7 native Android vectors share exact artwork.")
