@@ -5,8 +5,8 @@ Aplicativo Android **nativo em Java**. Projeto independente, sem dependência de
 ## Estado real
 
 **Versão 0.1.0 (protótipo local, não produção).** Interface de navegação e funcionalidades locais:
-- Feed local: publicações de texto e fotos, curtir, salvar, buscar, comentar e excluir.
-- Escolha de foto pelo seletor de documentos Android (permissão persistida da URI).
+- Feed local: publicações de texto e fotos, curtir, salvar, buscar, comentar, editar, arquivar, restaurar, compartilhar pelo Android e excluir.
+- Escolha de foto pelo seletor de documentos Android (permissão persistida da URI). Rascunhos salvos no SQLite ao sair da tela e ao deixar o aplicativo.
 - Perfil local: editar nome e biografia.
 - Telas de mensagens, salas, lives e Seven VIP sinalizadas como **em desenvolvimento**.
 
@@ -31,6 +31,17 @@ APK de teste: `app/build/outputs/apk/debug/app-debug.apk`. A workflow Android ta
 - `data/LocalPostStore` — armazenamento SQLite, com índices e comandos parametrizados.
 - `ui/UiKit` — componentes Java reutilizáveis.
 - `MainActivity` — navegação local do protótipo.
+
+## Benchmark e roadmap
+
+Veja [comparação e critérios de entrega](docs/benchmark-roadmap.md), com status explícito de feed, descoberta, chats, salas, lives, segurança e VIP.
+
+### Qualidade e testes
+
+- `PostRulesTest` valida entradas do domínio.
+- `LocalPostStoreTest` usa Robolectric para migração de banco, rascunhos, arquivo, edição e integridade referencial.
+- CI executa `testDebugUnitTest` e `assembleDebug`; a execução precisa ser verificada no GitHub Actions.
+- Compartilhamento envia conteúdo somente quando o usuário escolhe outro aplicativo no seletor Android.
 
 ## Próximas etapas para produção
 
