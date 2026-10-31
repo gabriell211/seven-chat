@@ -21,14 +21,14 @@ required_navigation = {
     "stories", "reels", "groups", "rooms", "live", "calls", "gifts", "wallet", "vip", "settings",
 }
 backend_routes = {
-    '"/posts"', '"/users"', '"/users/{handle}"', '"/users/me"',
+    '"/users"', '"/users/{handle}"', '"/users/me"',
     '"/conversations"', '"/conversations/{other}/messages"',
     '"/notifications"', '"/posts/{id}/comments"',
     '"/posts/{id}/like"', '"/posts/{id}/save"',
     '"/users/{id}/followers"', '"/users/{id}/following"',
     '"/users/me/blocks"', '"/users/{id}/block"', '"/features"',
 }
-auth_routes = {'"/auth/register"', '"/auth/login"', '"/auth/me"', '"/auth/logout"'}
+auth_routes = {'"/auth/register"', '"/auth/login"', '"/auth/me"', '"/auth/logout"', '"/posts"'}
 problems = []
 
 match = re.search(r'String\[\]\s+routes\s*=\s*\{([^}]+)\}', activity, re.S)
