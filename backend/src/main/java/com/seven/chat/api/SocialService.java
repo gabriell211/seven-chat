@@ -132,6 +132,30 @@ public class SocialService {
         return profile(viewer, handles.get(0));
     }
 
+    @Transactional(readOnly = true)
+    public List<SocialDto.Profile> relations(UUID viewer, UUID account, boolean followers) {
+        if (!accountExists(account)) throw new ApiExceptions.NotFound();
+        allowed(viewer, account);
+        String sqlQuery = followers
+                ? "SELECT a.id,a.handle,a.display_name,a.bio FROM follows f " +
+                  "JOIN accounts a ON a.id=f.follower_id WHERE f.following_id=:target "
+                : "SELECT a.id,a.handle,a.display_name,a.bio FROM follows f " +
+                  "JOIN accounts a ON a.id=f.following_id WHERE f.follower_id=:target ";
+        sqlQuery += "AND NOT EXISTS (SELECT 1 FROM user_blocks b WHERE " +
+                "(b.blocker_id=:me AND b.blocked_id=a.id) OR " +
+                "(b.blocker_id=a.id AND b.blocked_id=:me)) ORDER BY a.handle LIMIT 100";
+        return sql.query(sqlQuery, Map.of("target", account, "me", viewer),
+                (row, i) -> profileRow(viewer, row));
+    }
+
+    @Transactional(readOnly = true)
+    public List<SocialDto.Profile> myBlocks(UUID viewer) {
+        return sql.query("SELECT a.id,a.handle,a.display_name,a.bio " +
+                "FROM user_blocks b JOIN accounts a ON a.id=b.blocked_id " +
+                "WHERE b.blocker_id=:viewer ORDER BY a.handle LIMIT 100",
+                Map.of("viewer", viewer), (row, i) -> profileRow(viewer, row));
+    }
+
     @Transactional
     public void follow(UUID viewer, UUID other) {
         otherAccount(viewer, other);
@@ -246,6 +270,24 @@ public class SocialService {
         int count = sql.update("DELETE FROM post_comments WHERE id=:id AND author_id=:viewer",
                 Map.of("id", id, "viewer", viewer));
         if (count == 0) throw new ApiExceptions.NotFound();
+    }
+
+    @Transactional
+    public ApiDto.Post editPost(UUID viewer, long id, String text) {
+        String body = text == null ? "" : text.trim();
+        if (body.isEmpty() || body.length() > 2000) {
+            throw new ApiExceptions.InvalidInput("O texto deve ter entre 1 e 2.000 caracteres.");
+        }
+        int changed = sql.update("UPDATE posts SET body=:body " +
+                "WHERE id=:id AND author_id=:viewer",
+                Map.of("body", body, "id", id, "viewer", viewer));
+        if (changed == 0) throw new ApiExceptions.NotFound();
+        return sql.query("SELECT p.id,p.author_id,p.body,p.created_at,a.handle,a.display_name " +
+                        "FROM posts p JOIN accounts a ON a.id=p.author_id WHERE p.id=:id",
+                Map.of("id", id), (row, n) -> new ApiDto.Post(
+                        row.getLong("id"), row.getObject("author_id", UUID.class),
+                        row.getString("handle"), row.getString("display_name"),
+                        row.getString("body"), row.getTimestamp("created_at").toInstant())).get(0);
     }
 
     @Transactional
