@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.CacheControl;
@@ -16,10 +17,12 @@ import org.springframework.web.bind.annotation.*;
 public class ApiController {
     private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final AuthService auth;
+    private final AuthThrottle throttle;
     private final PostService posts;
 
     public ApiController(AuthService auth, PostService posts,
-                         org.springframework.jdbc.core.JdbcTemplate jdbc) {
+                         org.springframework.jdbc.core.JdbcTemplate jdbc, AuthThrottle throttle) {
+        this.throttle = throttle;
         this.jdbc = jdbc;
         this.auth = auth;
         this.posts = posts;
@@ -35,15 +38,21 @@ public class ApiController {
     }
 
     @PostMapping("/auth/register")
-    public ResponseEntity<ApiDto.Session> register(@Valid @RequestBody ApiDto.Register input) {
+    public ResponseEntity<ApiDto.Session> register(
+            @Valid @RequestBody ApiDto.Register input, HttpServletRequest request) {
+        throttle.registrationAttempt(request.getRemoteAddr());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .cacheControl(CacheControl.noStore()).body(auth.register(input));
     }
 
     @PostMapping("/auth/login")
-    public ResponseEntity<ApiDto.Session> login(@Valid @RequestBody ApiDto.Login input) {
-        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(auth.login(input));
+    public ResponseEntity<ApiDto.Session> login(
+            @Valid @RequestBody ApiDto.Login input, HttpServletRequest request) {
+        // Never trust unverified X-Forwarded-For values from a public caller.
+        throttle.loginAttempt(input.email(), request.getRemoteAddr());
+        ApiDto.Session session = auth.login(input);
+        throttle.clearSuccessfulLogin(input.email());
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(session);
     }
 
     @GetMapping("/auth/me")
