@@ -41,3 +41,4 @@ public final class PostRules {
     public static String normalize(String input) {
         return input == null ? "" : input.replace('\u0000', ' ').replace("\r\n", "\n").trim();
     }
+}
