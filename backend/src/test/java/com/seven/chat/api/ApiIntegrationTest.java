@@ -64,11 +64,11 @@ class ApiIntegrationTest {
 
         ApiDto.Post post2 = posts.publish(two.user().id(),
                 new ApiDto.CreatePost(UUID.randomUUID(), "Outro post"));
-        ApiDto.Feed firstPage = posts.feed(null, 1);
+        ApiDto.Feed firstPage = posts.feed(one.user().id(), null, 1);
         assertEquals(1, firstPage.data().size());
         assertEquals(post2.id(), firstPage.data().get(0).id());
         assertNotNull(firstPage.nextCursor());
-        assertEquals(post1.id(), posts.feed(firstPage.nextCursor(), 1).data().get(0).id());
+        assertEquals(post1.id(), posts.feed(one.user().id(), firstPage.nextCursor(), 1).data().get(0).id());
     }
 
     @Test
@@ -77,7 +77,7 @@ class ApiIntegrationTest {
         assertThrows(ApiExceptions.InvalidInput.class,
                 () -> posts.publish(user.user().id(),
                         new ApiDto.CreatePost(UUID.randomUUID(), "     ")));
-        assertThrows(ApiExceptions.InvalidInput.class, () -> posts.feed(-1L, 20));
-        assertThrows(ApiExceptions.InvalidInput.class, () -> posts.feed(null, 1000));
+        assertThrows(ApiExceptions.InvalidInput.class, () -> posts.feed(user.user().id(), -1L, 20));
+        assertThrows(ApiExceptions.InvalidInput.class, () -> posts.feed(user.user().id(), null, 1000));
     }
 }
