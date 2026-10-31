@@ -37,7 +37,7 @@ public class SocialController {
         return social.profile(who(principal), handle);
     }
 
-    @PatchMapping("/users/me")
+    @RequestMapping(path = "/users/me", method = {RequestMethod.PATCH, RequestMethod.POST})
     public SocialDto.Profile updateProfile(Authentication principal,
                                             @Valid @RequestBody SocialDto.EditProfile input) {
         return social.updateProfile(who(principal), input);
