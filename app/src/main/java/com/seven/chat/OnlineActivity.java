@@ -103,11 +103,15 @@ public final class OnlineActivity extends Activity {
         super.onSaveInstanceState(out);
     }
 
-    private void onInput(EditText field, java.util.function.Consumer<String> change) {
+    private interface TextChange {
+        void changed(String value);
+    }
+
+    private void onInput(EditText field, TextChange change) {
         field.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
-                change.accept(s.toString());
+                change.changed(s.toString());
             }
             @Override public void afterTextChanged(Editable value) { }
         });
