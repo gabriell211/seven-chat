@@ -1,0 +1,38 @@
+name: Seven Chat Java API
+
+on:
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Build and integration tests
+        run: mvn -B -ntp -f backend/pom.xml clean verify
+      - name: Preserve test reports on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-api-test-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
