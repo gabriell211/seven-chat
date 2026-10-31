@@ -20,6 +20,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Validate brand and adaptive icons
+        run: python3 scripts/check_brand.py
       - name: Auditar todas as páginas
         run: python3 scripts/check_pages.py
       - name: Testar regras locais
