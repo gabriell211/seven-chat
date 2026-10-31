@@ -39,12 +39,12 @@ public class ApiErrorHandler {
 
     @ExceptionHandler(ApiExceptions.InvalidInput.class)
     ResponseEntity<ApiDto.Error> invalid(ApiExceptions.InvalidInput ex) {
-        return response(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_INPUT", ex.getMessage());
+        return response(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_INPUT", ex.getMessage());
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, HttpMessageNotReadableException.class})
     ResponseEntity<ApiDto.Error> invalidRequest() {
-        return response(HttpStatus.UNPROCESSABLE_ENTITY, "VALIDATION_ERROR", "Dados inválidos.");
+        return response(HttpStatus.UNPROCESSABLE_CONTENT, "VALIDATION_ERROR", "Dados inválidos.");
     }
 
     private static ResponseEntity<ApiDto.Error> response(HttpStatus status, String code, String message) {
