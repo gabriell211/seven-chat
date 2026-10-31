@@ -44,6 +44,11 @@ public class AuthService {
         if (input.displayName().isBlank()) {
             throw new ApiExceptions.InvalidInput("Informe seu nome.");
         }
+        // BCrypt considera no máximo 72 bytes, não 72 caracteres Unicode.
+        if (input.password().isBlank() ||
+                input.password().getBytes(StandardCharsets.UTF_8).length > 72) {
+            throw new ApiExceptions.InvalidInput("A senha deve ter de 12 a 72 bytes.");
+        }
         try {
             AccountStore.StoredAccount account = accounts.create(
                     new ApiDto.Register(email, handle, input.displayName(), input.password()),
