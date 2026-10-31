@@ -376,10 +376,10 @@ public class SocialService {
     @Transactional(readOnly = true)
     public List<SocialDto.Conversation> conversations(UUID viewer) {
         return sql.query("SELECT x.peer_id,a.handle,a.display_name,dm.body,dm.created_at " +
-                "FROM (SELECT CASE WHEN sender_id=:me THEN receiver_id ELSE sender_id END peer_id, " +
-                "MAX(id) last_id FROM direct_messages " +
-                "WHERE sender_id=:me OR receiver_id=:me GROUP BY " +
-                "CASE WHEN sender_id=:me THEN receiver_id ELSE sender_id END) x " +
+                "FROM (SELECT peer_id, MAX(id) last_id FROM (" +
+                "SELECT CASE WHEN sender_id=:me THEN receiver_id ELSE sender_id END AS peer_id, id " +
+                "FROM direct_messages WHERE sender_id=:me OR receiver_id=:me" +
+                ") peers GROUP BY peer_id) x " +
                 "JOIN direct_messages dm ON dm.id=x.last_id " +
                 "JOIN accounts a ON a.id=x.peer_id " +
                 "WHERE NOT EXISTS (SELECT 1 FROM user_blocks b WHERE " +
