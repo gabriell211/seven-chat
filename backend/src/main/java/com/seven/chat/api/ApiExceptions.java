@@ -21,6 +21,10 @@ public final class ApiExceptions {
         public NotFound() { super("Recurso não encontrado."); }
     }
 
+    public static final class TooManyRequests extends RuntimeException {
+        public TooManyRequests() { super("Muitas tentativas. Tente novamente mais tarde."); }
+    }
+
     public static final class InvalidInput extends RuntimeException {
         public InvalidInput(String message) { super(message); }
     }
