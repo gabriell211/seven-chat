@@ -16,7 +16,7 @@ public final class LocalPostStore extends SQLiteOpenHelper {
     private static final String DATABASE = "seven_chat_local.db";
 
     public LocalPostStore(Context context) {
-        super(context.getApplicationContext(), DATABASE, null, 1);
+        super(context.getApplicationContext(), DATABASE, null, 2);
     }
 
     @Override
@@ -29,17 +29,32 @@ public final class LocalPostStore extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.execSQL("CREATE TABLE posts (id INTEGER PRIMARY KEY AUTOINCREMENT, caption TEXT NOT NULL, " +
                 "image_uri TEXT, created_at INTEGER NOT NULL, liked INTEGER NOT NULL DEFAULT 0, " +
-                "bookmarked INTEGER NOT NULL DEFAULT 0)");
+                "bookmarked INTEGER NOT NULL DEFAULT 0, " +
+                "archived INTEGER NOT NULL DEFAULT 0, edited_at INTEGER NOT NULL DEFAULT 0)");
         db.execSQL("CREATE TABLE comments (id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 "post_id INTEGER NOT NULL REFERENCES posts(id) ON DELETE CASCADE, " +
                 "body TEXT NOT NULL, created_at INTEGER NOT NULL)");
         db.execSQL("CREATE INDEX idx_posts_created_at ON posts(created_at DESC)");
+        db.execSQL("CREATE INDEX idx_posts_archived_created ON posts(archived, created_at DESC)");
+        createDraftsTable(db);
         db.execSQL("CREATE INDEX idx_comments_post_id ON comments(post_id, created_at)");
+    }
+
+    private static void createDraftsTable(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS drafts (" +
+                "id INTEGER PRIMARY KEY CHECK(id = 1), caption TEXT NOT NULL, " +
+                "image_uri TEXT, updated_at INTEGER NOT NULL)");
     }
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Migrações futuras deverão preservar os registros existentes.
+        if (oldVersion < 2) {
+            // ALTER TABLE preserva publicações, comentários, curtidas e favoritos da versão 1.
+            db.execSQL("ALTER TABLE posts ADD COLUMN archived INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("ALTER TABLE posts ADD COLUMN edited_at INTEGER NOT NULL DEFAULT 0");
+            db.execSQL("CREATE INDEX idx_posts_archived_created ON posts(archived, created_at DESC)");
+            createDraftsTable(db);
+        }
     }
 
     public long createPost(String caption, String imageUri) {
@@ -52,27 +67,81 @@ public final class LocalPostStore extends SQLiteOpenHelper {
     }
 
     public List<LocalPost> listPosts(String term, boolean savedOnly) {
-        List<LocalPost> posts = new ArrayList<>();
+        return queryPosts(term, savedOnly, false);
+    }
+
+    public List<LocalPost> listArchivedPosts() {
+        return queryPosts("", false, true);
+    }
+
+    private List<LocalPost> queryPosts(String term, boolean savedOnly, boolean archivedOnly) {
+        List<LocalPost> result = new ArrayList<>();
         String filter = term == null ? "" : term.trim();
-        StringBuilder where = new StringBuilder("1=1");
+        StringBuilder where = new StringBuilder("archived = ?");
         List<String> params = new ArrayList<>();
+        params.add(archivedOnly ? "1" : "0");
         if (!filter.isEmpty()) {
-            where.append(" AND caption LIKE ? ESCAPE '\\'");
+            where.append(" AND caption LIKE ? ESCAPE '\\\\'");
             params.add("%" + filter.replace("\\", "\\\\").replace("%", "\\%")
                     .replace("_", "\\_") + "%");
         }
         if (savedOnly) where.append(" AND bookmarked = 1");
         try (Cursor cursor = getReadableDatabase().query("posts",
-                new String[]{"id", "caption", "image_uri", "created_at", "liked", "bookmarked"},
+                new String[]{"id", "caption", "image_uri", "created_at", "liked", "bookmarked",
+                        "archived", "edited_at"},
                 where.toString(), params.toArray(new String[0]), null, null,
                 "created_at DESC, id DESC", "100")) {
             while (cursor.moveToNext()) {
-                posts.add(new LocalPost(cursor.getLong(0), cursor.getString(1),
+                result.add(new LocalPost(cursor.getLong(0), cursor.getString(1),
                         cursor.getString(2), cursor.getLong(3), cursor.getInt(4) != 0,
-                        cursor.getInt(5) != 0));
+                        cursor.getInt(5) != 0, cursor.getInt(6) != 0, cursor.getLong(7)));
             }
         }
-        return posts;
+        return result;
+    }
+
+    public void editPost(long id, String caption, boolean hasMedia) {
+        ContentValues values = new ContentValues();
+        values.put("caption", PostRules.caption(caption, hasMedia));
+        values.put("edited_at", System.currentTimeMillis());
+        getWritableDatabase().update("posts", values, "id=?", new String[]{String.valueOf(id)});
+    }
+
+    public void setArchived(long id, boolean archived) {
+        ContentValues values = new ContentValues();
+        values.put("archived", archived ? 1 : 0);
+        getWritableDatabase().update("posts", values, "id=?", new String[]{String.valueOf(id)});
+    }
+
+    public void saveDraft(String caption, String imageUri) {
+        String safeCaption = PostRules.normalize(caption);
+        if (safeCaption.length() > PostRules.MAX_CAPTION) {
+            throw new IllegalArgumentException("O rascunho excede 2.000 caracteres.");
+        }
+        if (safeCaption.isEmpty() && (imageUri == null || imageUri.isEmpty())) {
+            clearDraft();
+            return;
+        }
+        ContentValues values = new ContentValues();
+        values.put("id", 1);
+        values.put("caption", safeCaption);
+        values.put("image_uri", imageUri);
+        values.put("updated_at", System.currentTimeMillis());
+        getWritableDatabase().insertWithOnConflict("drafts", null, values,
+                SQLiteDatabase.CONFLICT_REPLACE);
+    }
+
+    public LocalDraft readDraft() {
+        try (Cursor cursor = getReadableDatabase().query("drafts",
+                new String[]{"caption", "image_uri", "updated_at"},
+                "id=?", new String[]{"1"}, null, null, null, "1")) {
+            if (!cursor.moveToFirst()) return null;
+            return new LocalDraft(cursor.getString(0), cursor.getString(1), cursor.getLong(2));
+        }
+    }
+
+    public void clearDraft() {
+        getWritableDatabase().delete("drafts", "id=?", new String[]{"1"});
     }
 
     public void setLiked(long id, boolean liked) {
