@@ -1,0 +1,122 @@
+{
+  "version": 1,
+  "kind": "seven-chat-release-certification",
+  "policy": "fail-closed",
+  "source_pr": 10,
+  "required_pages": {
+    "feed": {
+      "status": "pending",
+      "evidence": []
+    },
+    "explore": {
+      "status": "pending",
+      "evidence": []
+    },
+    "compose": {
+      "status": "pending",
+      "evidence": []
+    },
+    "chats": {
+      "status": "pending",
+      "evidence": []
+    },
+    "notifications": {
+      "status": "pending",
+      "evidence": []
+    },
+    "saved": {
+      "status": "pending",
+      "evidence": []
+    },
+    "profile": {
+      "status": "pending",
+      "evidence": []
+    },
+    "stories": {
+      "status": "pending",
+      "evidence": []
+    },
+    "reels": {
+      "status": "pending",
+      "evidence": []
+    },
+    "groups": {
+      "status": "pending",
+      "evidence": []
+    },
+    "rooms": {
+      "status": "pending",
+      "evidence": []
+    },
+    "live": {
+      "status": "pending",
+      "evidence": []
+    },
+    "calls": {
+      "status": "pending",
+      "evidence": []
+    },
+    "gifts": {
+      "status": "pending",
+      "evidence": []
+    },
+    "wallet": {
+      "status": "pending",
+      "evidence": []
+    },
+    "vip": {
+      "status": "pending",
+      "evidence": []
+    },
+    "settings": {
+      "status": "pending",
+      "evidence": []
+    }
+  },
+  "required_integrations": {
+    "android-build": {
+      "status": "pending",
+      "evidence": []
+    },
+    "backend-build": {
+      "status": "pending",
+      "evidence": []
+    },
+    "postgresql-integration": {
+      "status": "pending",
+      "evidence": []
+    },
+    "real-two-account-e2e": {
+      "status": "pending",
+      "evidence": []
+    },
+    "login-session-revocation": {
+      "status": "pending",
+      "evidence": []
+    },
+    "security-authorization": {
+      "status": "pending",
+      "evidence": []
+    },
+    "media-storage": {
+      "status": "pending",
+      "evidence": []
+    },
+    "rtc-voice-video": {
+      "status": "pending",
+      "evidence": []
+    },
+    "purchase-entitlement": {
+      "status": "pending",
+      "evidence": []
+    },
+    "moderation-and-abuse": {
+      "status": "pending",
+      "evidence": []
+    },
+    "privacy-and-lgpd": {
+      "status": "pending",
+      "evidence": []
+    }
+  }
+}
