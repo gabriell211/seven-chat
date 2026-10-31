@@ -14,6 +14,17 @@ public class ApiErrorHandler {
         return response(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Credenciais inválidas.");
     }
 
+
+    @ExceptionHandler(ApiExceptions.Forbidden.class)
+    ResponseEntity<ApiDto.Error> forbidden() {
+        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "Acesso negado.");
+    }
+
+    @ExceptionHandler(ApiExceptions.NotFound.class)
+    ResponseEntity<ApiDto.Error> notFound() {
+        return response(HttpStatus.NOT_FOUND, "NOT_FOUND", "Recurso não encontrado.");
+    }
+
     @ExceptionHandler(ApiExceptions.Conflict.class)
     ResponseEntity<ApiDto.Error> conflict() {
         return response(HttpStatus.CONFLICT, "CONFLICT", "E-mail ou usuário já cadastrado.");
