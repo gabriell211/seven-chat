@@ -63,7 +63,7 @@ public class ApiController {
     public ApiDto.Feed posts(Authentication principal,
                              @RequestParam(required = false) Long before,
                              @RequestParam(defaultValue = "20") int limit) {
-        return posts.feed(before, limit);
+        return posts.feed(UUID.fromString(principal.getName()), before, limit);
     }
 
     @PostMapping("/posts")
