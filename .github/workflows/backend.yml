@@ -49,7 +49,10 @@ jobs:
           JDBC_DATABASE_URL: jdbc:postgresql://localhost:5432/seven_chat_ci
           DB_USER: seven_ci
           DB_PASSWORD: seven_ci_only
-        run: mvn -B -ntp -f backend/pom.xml clean verify
+        run: |
+          set -o pipefail
+          mvn -B -ntp -f backend/pom.xml clean verify 2>&1 | tee /tmp/seven-maven-test.log
+          python3 scripts/check_ci_warnings.py /tmp/seven-maven-test.log
       - name: Preserve test reports on failure
         if: always()
         uses: actions/upload-artifact@v6
