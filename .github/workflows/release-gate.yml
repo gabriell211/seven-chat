@@ -1,0 +1,78 @@
+name: Seven Chat - Gate de homologacao
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seven-chat-release-certification
+  cancel-in-progress: false
+
+jobs:
+  homologation:
+    name: Compilar, testar e validar homologacao
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: seven_chat_ci
+          POSTGRES_USER: seven_ci
+          POSTGRES_PASSWORD: seven_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seven_ci -d seven_chat_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Inspect every Android page
+        run: python3 scripts/check_pages.py
+      - name: Test backend and migrations with real PostgreSQL
+        env:
+          JDBC_DATABASE_URL: jdbc:postgresql://localhost:5432/seven_chat_ci
+          DB_USER: seven_ci
+          DB_PASSWORD: seven_ci_only
+        run: mvn -B -ntp -f backend/pom.xml clean verify
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Setup Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Test Android Java
+        run: gradle --no-daemon testDebugUnitTest
+      - name: Compile Android debug
+        run: gradle --no-daemon assembleDebug
+      - name: Verify release readiness - block if anything unhomologated
+        run: python3 scripts/release_gate.py
+      - name: Preserve test reports for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: seven-chat-homologation-evidence
+          path: |
+            backend/target/surefire-reports/
+            app/build/test-results/
+            app/build/reports/tests/
+          if-no-files-found: warn
+
+# No GitHub release, public APK, production deploy or signing is created here.
+# A successful job is still only one input to production review, not proof
+# that live voice, payments and other external integrations were exercised.
