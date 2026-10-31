@@ -69,6 +69,11 @@ jobs:
           set -o pipefail
           gradle --no-daemon --warning-mode all testDebugUnitTest 2>&1 | tee /tmp/seven-gradle-test.log
           python3 scripts/check_ci_warnings.py /tmp/seven-gradle-test.log
+      - name: Compile Android instrumentation tests
+        run: |
+          set -o pipefail
+          gradle --no-daemon --warning-mode all assembleDebugAndroidTest 2>&1 | tee /tmp/seven-android-instrumentation-build.log
+          python3 scripts/check_ci_warnings.py /tmp/seven-android-instrumentation-build.log
       - name: Compile Android debug
         run: |
           set -o pipefail
