@@ -90,7 +90,9 @@ jobs:
           arch: x86_64
           disable-animations: true
           emulator-boot-timeout: 600
-          script: gradle --no-daemon connectedDebugAndroidTest
+          script: |
+            bash -euo pipefail -c 'gradle --no-daemon --warning-mode all connectedDebugAndroidTest 2>&1 | tee /tmp/seven-android-e2e.log'
+            python3 scripts/check_ci_warnings.py /tmp/seven-android-e2e.log
 
       - name: Preserve Android and server evidence
         if: always()
