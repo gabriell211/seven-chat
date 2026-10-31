@@ -45,17 +45,21 @@ public class PostStore {
                 .orElseThrow(() -> new IllegalStateException("Publicação não persistida."));
     }
 
-    public ApiDto.Feed feed(Long before, int limit) {
-        String sql = "SELECT p.id, p.author_id, p.body, p.created_at, a.handle, a.display_name " +
-                "FROM posts p JOIN accounts a ON a.id=p.author_id ";
-        Map<String, ?> params;
+    public ApiDto.Feed feed(UUID viewer, Long before, int limit) {
+        String sql = "SELECT p.id,p.author_id,p.body,p.created_at,a.handle,a.display_name " +
+                "FROM posts p JOIN accounts a ON a.id=p.author_id " +
+                "WHERE NOT EXISTS (SELECT 1 FROM user_blocks b WHERE " +
+                "(b.blocker_id=:viewer AND b.blocked_id=p.author_id) OR " +
+                "(b.blocker_id=p.author_id AND b.blocked_id=:viewer)) ";
+        org.springframework.jdbc.core.namedparam.MapSqlParameterSource params =
+                new org.springframework.jdbc.core.namedparam.MapSqlParameterSource()
+                        .addValue("viewer", viewer)
+                        .addValue("size", limit + 1);
         if (before != null) {
-            sql += "WHERE p.id < :before ORDER BY p.id DESC LIMIT :size";
-            params = Map.of("before", before, "size", limit + 1);
-        } else {
-            sql += "ORDER BY p.id DESC LIMIT :size";
-            params = Map.of("size", limit + 1);
+            sql += "AND p.id<:before ";
+            params.addValue("before", before);
         }
+        sql += "ORDER BY p.id DESC LIMIT :size";
         List<ApiDto.Post> rows = jdbc.query(sql, params, this::map);
         boolean hasMore = rows.size() > limit;
         List<ApiDto.Post> displayed = hasMore ? rows.subList(0, limit) : rows;
