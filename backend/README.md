@@ -51,7 +51,7 @@ mvn -f backend/pom.xml -B -ntp clean verify
 mvn -f backend/pom.xml spring-boot:run
 ```
 
-O teste automatizado usa H2 no modo PostgreSQL; a produção usa o driver PostgreSQL. A migração `V1__accounts_sessions_posts.sql` cria contas, sessões revogáveis e posts de texto com índices.
+Os testes automatizados usam **PostgreSQL real**, provisionado pelo workflow de API no GitHub Actions. As migrações Flyway V1, V2 e V3 criam contas, sessões, posts, relações sociais, mensagens, notificações e contadores de tentativas de autenticação. A branch de homologação `br-steep-sunset-b4mr8l1b` foi usada para validar manualmente o esquema, e **não** deve receber automaticamente o Flyway inicial como se estivesse vazia: as migrações manuais não registraram histórico de checksum Flyway.
 
 ## Segurança entregue
 
@@ -67,11 +67,11 @@ O teste automatizado usa H2 no modo PostgreSQL; a produção usa o driver Postgr
 ## Bloqueios antes de produção pública
 
 - **Verificação de e-mail e recuperação de senha ainda não implementadas.**
-- **Rate limiting distribuído/anti-brute-force ainda não implementado.**
+- Limites básicos distribuídos de cadastro/login **implementados em PostgreSQL** (429 após limite), mas ainda sem testes de carga, redes de proxy validadas e política de proteção contra ataque distribuído em vários endereços IP.
 - Moderação, denúncia, exclusão/exportação LGPD e controles de idade ainda não implementados.
 - Segurança de transporte HTTPS no proxy de produção ainda precisa ser configurada.
 - Idempotência concorrente e integração real Android/API ainda precisam de teste ponta a ponta.
-- Assinaturas VIP, compras, imagens e chat não existem nesta API.
+- Mensagens privadas de **texto** existem na API; mensagens com mídia, push, presença, chamadas, compras, assinatura VIP, upload e lives ainda não foram homologadas.
 
 Não disponibilize cadastro aberto para a internet sem fechar esses itens e validar TLS, logs de auditoria e proteção contra abuso. **Nenhum segredo deve ser incluído no repositório.**
 
@@ -80,3 +80,12 @@ Não disponibilize cadastro aberto para a internet sem fechar esses itens e vali
 O workflow `Seven Chat Java API` executa Maven `clean verify` e publica relatórios dos testes. O backend só deve ser mesclado depois de **CI verde**; o app Android possui CI separado.
 
 A issue #9 acompanha os itens P0 faltantes.
+
+## Hospedagem portátil
+
+A API tem `backend/Dockerfile` com Java 21 e execução sem root. Para Android apontar automaticamente para uma API HTTPS homologada, use `gradle -PsevenApiUrl=https://api.exemplo-real.com assembleRelease`. Esse endereço é um exemplo de sintaxe, **não um endpoint existente**. Nunca adicione senhas ou credenciais do Neon no app. O URL deve apontar para serviço efetivamente implantado e testado. Sem `sevenApiUrl`, a interface solicita configuração manual do servidor.
+
+O Google Cloud Run oferece franquia gratuita mensal, mas **precisa de projeto Cloud com faturamento habilitado** e não garante custo zero sob qualquer carga. Consulte `docs/hosting.md`. Railway e Render estão fora do desenho de hospedagem.
+
+Nenhuma release foi liberada. Todos os requisitos obrigatórios constam em `release-certification.json` e são bloqueados por `scripts/release_gate.py` caso não estejam homologados.
+
