@@ -124,7 +124,7 @@ public final class MainActivity extends Activity {
 
     private void explore() {
         title("Explorar", "Busque suas publicações locais; a descoberta de pessoas virá com o servidor.");
-        EditText field = input("Buscar na legenda", search, 1, false);
+        EditText field = input("Buscar na legenda", search, 100, false);
         page.addView(field);
         gap(page, 8);
         page.addView(action("Buscar", true, () -> {
@@ -274,7 +274,7 @@ public final class MainActivity extends Activity {
                     show("create");
                     draftCaption.setText(caption);
                 }
-            } catch (SecurityException e) {
+            } catch (RuntimeException e) {
                 toast("Não foi possível manter o acesso à imagem");
             }
         }
