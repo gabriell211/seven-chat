@@ -107,12 +107,12 @@ public class SocialService {
             throw new ApiExceptions.InvalidInput("Busque por 2 a 24 letras, números ou _.");
         }
         return sql.query("SELECT id,handle,display_name,bio FROM accounts " +
-                        "WHERE id<>:viewer AND handle LIKE :term " +
+                        "WHERE id<>:viewer AND handle LIKE :term ESCAPE '!' " +
                         "AND NOT EXISTS (SELECT 1 FROM user_blocks b WHERE " +
                         "(b.blocker_id=:viewer AND b.blocked_id=accounts.id) OR " +
                         "(b.blocker_id=accounts.id AND b.blocked_id=:viewer)) " +
                         "ORDER BY handle LIMIT 25",
-                Map.of("viewer", viewer, "term", "%" + term + "%"),
+                Map.of("viewer", viewer, "term", "%" + term.replace("_", "!_") + "%"),
                 (r, n) -> profileRow(viewer, r));
     }
 
