@@ -1,6 +1,7 @@
 package com.seven.chat;
 
 import android.content.Context;
+import android.widget.EditText;
 import android.os.SystemClock;
 
 import androidx.test.core.app.ActivityScenario;
@@ -25,12 +26,14 @@ import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.isAssignableFrom;
 import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
 import static androidx.test.espresso.matcher.ViewMatchers.withHint;
 import static androidx.test.espresso.matcher.ViewMatchers.withClassName;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import android.widget.ScrollView;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -86,7 +89,8 @@ public final class RealPagesInstrumentationTest {
         long deadline = SystemClock.elapsedRealtime() + 25000;
         while (true) {
             try {
-                onView(withText(expected)).check(matches(isDisplayed()));
+                onView(allOf(withText(expected), not(isAssignableFrom(EditText.class))))
+                        .check(matches(isDisplayed()));
                 return;
             } catch (AssertionError | RuntimeException failure) {
                 if (SystemClock.elapsedRealtime() >= deadline) throw failure;
