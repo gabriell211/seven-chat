@@ -2,6 +2,7 @@ package com.seven.chat;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -19,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.seven.chat.data.LocalComment;
+import com.seven.chat.data.LocalDraft;
 import com.seven.chat.data.LocalPost;
 import com.seven.chat.data.LocalPostStore;
 import com.seven.chat.domain.PostRules;
@@ -51,7 +53,31 @@ public final class MainActivity extends Activity {
         root = UiKit.vertical(this);
         root.setBackgroundColor(UiKit.BACKGROUND);
         setContentView(root);
-        show("feed");
+        if (state != null) {
+            search = state.getString("search", "");
+            savedOnly = state.getBoolean("savedOnly", false);
+        }
+        show(state == null ? "feed" : state.getString("route", "feed"));
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle state) {
+        state.putString("route", current);
+        state.putString("search", search);
+        state.putBoolean("savedOnly", savedOnly);
+        super.onSaveInstanceState(state);
+    }
+
+    @Override
+    protected void onPause() {
+        persistOpenDraft();
+        super.onPause();
+    }
+
+    private void persistOpenDraft() {
+        if ("create".equals(current) && draftCaption != null) {
+            posts.saveDraft(draftCaption.getText().toString(), selectedPhotoUri);
+        }
     }
 
     @Override
@@ -61,6 +87,8 @@ public final class MainActivity extends Activity {
     }
 
     private void show(String route) {
+        persistOpenDraft();
+        draftCaption = null;
         current = route;
         root.removeAllViews();
 
@@ -85,6 +113,7 @@ public final class MainActivity extends Activity {
             case "feed": feed(); break;
             case "explore": explore(); break;
             case "create": create(); break;
+            case "archive": archive(); break;
             case "messages": messages(); break;
             case "profile": profile(); break;
             case "vip": vip(); break;
@@ -104,7 +133,8 @@ public final class MainActivity extends Activity {
 
     private void nav(LinearLayout parent, String label, String route) {
         TextView item = UiKit.text(this, label, 13,
-                current.equals(route) ? UiKit.PRIMARY : UiKit.MUTED, true);
+                (current.equals(route) || (current.equals("archive") && route.equals("feed")))
+                        ? UiKit.PRIMARY : UiKit.MUTED, true);
         item.setGravity(Gravity.CENTER);
         item.setMinHeight(dp(48));
         item.setContentDescription(label);
@@ -116,8 +146,16 @@ public final class MainActivity extends Activity {
 
     private void feed() {
         title("Seu espaço", "Publicações salvas só neste aparelho.");
-        TextView publish = action("Criar publicação", true, () -> show("create"));
-        page.addView(publish);
+        page.addView(action("Criar publicação", true, () -> show("create")));
+        gap(page, 8);
+        page.addView(action("Ver publicações arquivadas", false, () -> show("archive")));
+        gap(page, 18);
+        renderPosts("", false);
+    }
+
+    private void archive() {
+        title("Seu arquivo", "Somente você pode ver as publicações arquivadas neste aparelho.");
+        page.addView(action("Voltar ao feed", false, () -> show("feed")));
         gap(page, 18);
         renderPosts("", false);
     }
@@ -143,7 +181,8 @@ public final class MainActivity extends Activity {
     }
 
     private void renderPosts(String term, boolean onlySaved) {
-        List<LocalPost> list = posts.listPosts(term, onlySaved);
+        List<LocalPost> list = current.equals("archive")
+                ? posts.listArchivedPosts() : posts.listPosts(term, onlySaved);
         if (list.isEmpty()) {
             note("Nenhuma publicação encontrada", "Crie seu primeiro post ou altere os filtros de busca.");
             return;
@@ -151,7 +190,8 @@ public final class MainActivity extends Activity {
         for (LocalPost post : list) {
             LinearLayout card = UiKit.card(this);
             String name = profile.getString("name", "Meu perfil");
-            addText(card, name + "  ·  " + DateFormat.getDateInstance().format(new Date(post.createdAt)),
+            addText(card, name + "  ·  " + DateFormat.getDateInstance().format(new Date(post.createdAt))
+                            + (post.editedAt > 0 ? "  ·  editado" : ""),
                     14, UiKit.PRIMARY, true);
             gap(card, 10);
             if (!post.caption.isEmpty()) addText(card, post.caption, 16, UiKit.TEXT, false);
@@ -179,6 +219,7 @@ public final class MainActivity extends Activity {
                 show(current);
             });
             smallAction(actions, "Comentar", () -> commentDialog(post.id));
+            smallAction(actions, "Compartilhar", () -> sharePost(post));
             card.addView(actions);
             List<LocalComment> comments = posts.comments(post.id);
             if (!comments.isEmpty()) {
@@ -188,6 +229,14 @@ public final class MainActivity extends Activity {
                     gap(card, 3);
                 }
             }
+            gap(card, 6);
+            LinearLayout manage = UiKit.horizontal(this);
+            smallAction(manage, "Editar", () -> editPostDialog(post));
+            smallAction(manage, post.archived ? "Restaurar" : "Arquivar", () -> {
+                posts.setArchived(post.id, !post.archived);
+                show(current);
+            });
+            card.addView(manage);
             gap(card, 8);
             TextView delete = UiKit.text(this, "Excluir publicação", 12, UiKit.MUTED, false);
             delete.setContentDescription("Excluir publicação");
@@ -202,6 +251,42 @@ public final class MainActivity extends Activity {
                     }).show());
             card.addView(delete);
             UiKit.cardInto(page, card, this);
+        }
+    }
+
+    private void editPostDialog(LocalPost post) {
+        EditText field = input("Editar legenda", post.caption, PostRules.MAX_CAPTION, true);
+        field.setMinLines(3);
+        new AlertDialog.Builder(this)
+                .setTitle("Editar publicação")
+                .setView(field)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Salvar", (dialog, which) -> {
+                    try {
+                        posts.editPost(post.id, field.getText().toString(),
+                                post.imageUri != null && !post.imageUri.isEmpty());
+                        show(current);
+                    } catch (IllegalArgumentException e) {
+                        toast(e.getMessage());
+                    }
+                }).show();
+    }
+
+    private void sharePost(LocalPost post) {
+        Intent send = new Intent(Intent.ACTION_SEND);
+        if (post.imageUri == null || post.imageUri.isEmpty()) {
+            send.setType("text/plain");
+            send.putExtra(Intent.EXTRA_TEXT, post.caption);
+        } else {
+            send.setType("image/*");
+            send.putExtra(Intent.EXTRA_STREAM, Uri.parse(post.imageUri));
+            send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            if (!post.caption.isEmpty()) send.putExtra(Intent.EXTRA_TEXT, post.caption);
+        }
+        try {
+            startActivity(Intent.createChooser(send, "Compartilhar publicação"));
+        } catch (ActivityNotFoundException | SecurityException e) {
+            toast("Não há um aplicativo disponível para compartilhar");
         }
     }
 
@@ -222,8 +307,11 @@ public final class MainActivity extends Activity {
     }
 
     private void create() {
-        title("Nova publicação", "Publique textos e fotos localmente.");
-        draftCaption = input("O que você quer compartilhar?", "", PostRules.MAX_CAPTION, true);
+        title("Nova publicação", "Seu rascunho é preservado localmente ao sair da tela.");
+        LocalDraft saved = posts.readDraft();
+        selectedPhotoUri = saved == null ? null : saved.imageUri;
+        draftCaption = input("O que você quer compartilhar?",
+                saved == null ? "" : saved.caption, PostRules.MAX_CAPTION, true);
         draftCaption.setMinLines(5);
         page.addView(draftCaption);
         gap(page, 14);
@@ -233,7 +321,9 @@ public final class MainActivity extends Activity {
         page.addView(action("Publicar", true, () -> {
             try {
                 posts.createPost(draftCaption.getText().toString(), selectedPhotoUri);
+                posts.clearDraft();
                 selectedPhotoUri = null;
+                draftCaption = null;
                 toast("Publicação salva neste aparelho");
                 show("feed");
             } catch (IllegalArgumentException e) {
@@ -241,6 +331,13 @@ public final class MainActivity extends Activity {
             } catch (RuntimeException e) {
                 toast("Não foi possível salvar a publicação");
             }
+        }));
+        gap(page, 8);
+        page.addView(action("Descartar rascunho", false, () -> {
+            posts.clearDraft();
+            selectedPhotoUri = null;
+            draftCaption = null;
+            show("create");
         }));
         gap(page, 20);
         note("Visibilidade", "Nesta versão os posts não são enviados à internet.");
@@ -269,11 +366,10 @@ public final class MainActivity extends Activity {
                 int grant = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
                 getContentResolver().takePersistableUriPermission(uri, grant);
                 selectedPhotoUri = uri.toString();
-                if (draftCaption != null) {
-                    String caption = draftCaption.getText().toString();
-                    show("create");
-                    draftCaption.setText(caption);
-                }
+                String caption = draftCaption == null ? "" : draftCaption.getText().toString();
+                posts.saveDraft(caption, selectedPhotoUri);
+                draftCaption = null;
+                show("create");
             } catch (RuntimeException e) {
                 toast("Não foi possível manter o acesso à imagem");
             }
