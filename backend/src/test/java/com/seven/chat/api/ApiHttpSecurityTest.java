@@ -66,7 +66,7 @@ class ApiHttpSecurityTest {
                         .content("""
                                 {"clientMutationId":"00000000-0000-4000-8000-000000000001","body":"  "}
                                 """))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
 
         mvc.perform(post("/api/v1/posts").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -100,6 +100,6 @@ class ApiHttpSecurityTest {
                 .content("""
                         {"email":"invalid","handle":"ad","displayName":"","password":"123"}
                         """))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().isUnprocessableContent());
     }
 }
