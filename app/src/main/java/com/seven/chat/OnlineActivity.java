@@ -2,6 +2,7 @@ package com.seven.chat;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
@@ -696,6 +697,10 @@ public final class OnlineActivity extends Activity {
         note("Servidor atual", api.baseUrl());
         button("Trocar servidor", false, () -> navigate("server"));
         button("Usuários bloqueados", false, () -> navigate("blocks"));
+        button("Minhas publicações locais anteriores", false,
+                () -> startActivity(new Intent(this, MainActivity.class)));
+        note("Dados antigos", "Publicações e fotos do banco local foram preservadas. " +
+                "O envio delas ao servidor dependerá de uma importação com sua confirmação.");
         button("Sair da conta", true, () -> request("POST", "/api/v1/auth/logout",
                 null, false, result -> {
                     api.signOut();
