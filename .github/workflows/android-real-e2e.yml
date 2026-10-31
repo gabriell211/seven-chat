@@ -81,6 +81,11 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Initialize Android emulator update metadata
+        run: |
+          install -d "$HOME/.android"
+          printf 'lastUpdateCheck=0\n' > "$HOME/.android/emu-update-last-check.ini"
+
       - name: Enable hardware accelerated emulator
         run: |
           if [ -e /dev/kvm ]; then
