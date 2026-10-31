@@ -349,19 +349,43 @@ public final class OnlineActivity extends Activity {
         card.addView(UiKit.text(this, post.optString("body"), 16, UiKit.TEXT, false));
         UiKit.gap(card, this, 10);
         LinearLayout controls = UiKit.horizontal(this);
-        small(controls, "Curtir", () ->
-                request("POST", "/api/v1/posts/" + id + "/like", null, false,
-                        result -> Toast.makeText(this,
-                                "Curtidas: " + result.optInt("likes"), Toast.LENGTH_SHORT).show()));
-        small(controls, "Salvar", () ->
-                request("POST", "/api/v1/posts/" + id + "/save", null, false,
-                        result -> Toast.makeText(this, "Salvo na conta", Toast.LENGTH_SHORT).show()));
+        small(controls, "Curtir/Descurtir", () ->
+                request("GET", "/api/v1/posts/" + id + "/engagement", null, false,
+                        status -> request(status.optBoolean("likedByMe") ? "DELETE" : "POST",
+                                "/api/v1/posts/" + id + "/like", null, false,
+                                result -> Toast.makeText(this,
+                                        "Curtidas: " + result.optLong("likes"),
+                                        Toast.LENGTH_SHORT).show())));
+        small(controls, "Salvar/Remover", () ->
+                request("GET", "/api/v1/posts/" + id + "/engagement", null, false,
+                        status -> request(status.optBoolean("savedByMe") ? "DELETE" : "POST",
+                                "/api/v1/posts/" + id + "/save", null, false,
+                                result -> Toast.makeText(this,
+                                        result.optBoolean("savedByMe") ? "Salvo" : "Removido dos salvos",
+                                        Toast.LENGTH_SHORT).show())));
         small(controls, "Comentários", () -> {
             selectedPost = id;
             navigate("comments");
         });
         card.addView(controls);
         if (authorId.equals(meId)) {
+            TextView edit = UiKit.text(this, "Editar publicação", 13, UiKit.PRIMARY, true);
+            edit.setMinHeight(dp(46));
+            edit.setOnClickListener(v -> {
+                EditText caption = new EditText(this);
+                caption.setText(post.optString("body"));
+                caption.setTextColor(UiKit.TEXT);
+                caption.setFilters(new InputFilter[]{new InputFilter.LengthFilter(2000)});
+                new AlertDialog.Builder(this)
+                        .setTitle("Editar publicação")
+                        .setView(caption)
+                        .setNegativeButton("Cancelar", null)
+                        .setPositiveButton("Salvar", (dialog, which) ->
+                                request("POST", "/api/v1/posts/" + id + "/edit",
+                                        json("body", caption.getText().toString()), false,
+                                        result -> navigate(route))).show();
+            });
+            card.addView(edit);
             TextView delete = UiKit.text(this, "Excluir", 13, UiKit.MUTED, true);
             delete.setPadding(0, dp(8), 0, 0);
             delete.setOnClickListener(v -> new AlertDialog.Builder(this)
