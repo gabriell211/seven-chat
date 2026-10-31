@@ -1,1 +1,0 @@
-{"compilerOptions":{"strict":true,"jsx":"react-jsx","moduleResolution":"bundler","module":"esnext","target":"esnext","lib":["esnext"],"allowSyntheticDefaultImports":true,"esModuleInterop":true,"skipLibCheck":true,"noEmit":true},"include":["App.tsx","src/**/*.ts","src/**/*.tsx"]}

@@ -1,8 +1,15 @@
-node_modules
-.next
-.env
-.env.*
-!.env.example
-coverage
-*.log
+# Android
+.gradle/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+captures/
+*.apk
+*.aab
+*.keystore
+*.jks
+# OS
 .DS_Store
+Thumbs.db
