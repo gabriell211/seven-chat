@@ -64,7 +64,10 @@ public final class SevenApiClient {
     }
 
     public String baseUrl() {
-        return settings.getString("base_url", "");
+        String stored = settings.getString("base_url", "");
+        if (stored != null && !stored.isEmpty()) return stored;
+        String packaged = BuildConfig.API_BASE_URL;
+        return packaged == null || packaged.isEmpty() ? "" : validateBaseUrl(packaged);
     }
 
     public void setBaseUrl(String value) {
