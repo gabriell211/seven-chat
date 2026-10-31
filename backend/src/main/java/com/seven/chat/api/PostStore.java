@@ -29,13 +29,20 @@ public class PostStore {
     }
 
     public ApiDto.Post create(UUID authorId, ApiDto.CreatePost input) {
-        Long id = jdbc.queryForObject(
-                "INSERT INTO posts (author_id, client_mutation_id, body) " +
-                "VALUES (:author, :mutation, :body) RETURNING id",
-                Map.of("author", authorId, "mutation", input.clientMutationId(),
-                        "body", input.body().trim()), Long.class);
+        org.springframework.jdbc.support.GeneratedKeyHolder keys =
+                new org.springframework.jdbc.support.GeneratedKeyHolder();
+        org.springframework.jdbc.core.namedparam.MapSqlParameterSource values =
+                new org.springframework.jdbc.core.namedparam.MapSqlParameterSource()
+                        .addValue("author", authorId)
+                        .addValue("mutation", input.clientMutationId())
+                        .addValue("body", input.body().trim());
+        jdbc.update("INSERT INTO posts (author_id, client_mutation_id, body) " +
+                "VALUES (:author, :mutation, :body)", values, keys, new String[]{"id"});
+        if (keys.getKey() == null) {
+            throw new IllegalStateException("A inserção não retornou identificador.");
+        }
         return findMutation(authorId, input.clientMutationId())
-                .orElseThrow(() -> new IllegalStateException("Post não foi persistido: " + id));
+                .orElseThrow(() -> new IllegalStateException("Publicação não persistida."));
     }
 
     public ApiDto.Feed feed(Long before, int limit) {
