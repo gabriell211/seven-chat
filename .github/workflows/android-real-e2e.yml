@@ -1,7 +1,13 @@
 name: Seven Chat - Android E2E com API local
 
-# Manual by design: never deploys and never uses production credentials.
+# Runs on the integration PR and on demand. No deployment or production credentials.
 on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'backend/**'
+      - 'scripts/check_ci_warnings.py'
+      - '.github/workflows/android-real-e2e.yml'
   workflow_dispatch:
 
 permissions:
@@ -95,6 +101,10 @@ jobs:
           script: |
             bash -euo pipefail -c 'gradle --no-daemon --warning-mode all connectedDebugAndroidTest 2>&1 | tee /tmp/seven-android-e2e.log'
             python3 scripts/check_ci_warnings.py /tmp/seven-android-e2e.log
+
+      - name: Audit real API startup logs for warnings
+        if: success()
+        run: python3 scripts/check_ci_warnings.py /tmp/seven-api-local.log
 
       - name: Preserve Android and server evidence
         if: always()
