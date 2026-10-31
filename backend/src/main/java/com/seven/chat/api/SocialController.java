@@ -28,8 +28,8 @@ public class SocialController {
     }
 
     @GetMapping("/users")
-    public List<SocialDto.Profile> search(Authentication principal, @RequestParam String query) {
-        return social.search(who(principal), query);
+    public java.util.Map<String, List<SocialDto.Profile>> search(Authentication principal, @RequestParam String query) {
+        return java.util.Map.of("data", social.search(who(principal), query));
     }
 
     @GetMapping("/users/{handle}")
@@ -100,8 +100,8 @@ public class SocialController {
     }
 
     @GetMapping("/posts/{id}/comments")
-    public List<SocialDto.Comment> comments(Authentication principal, @PathVariable long id) {
-        return social.comments(who(principal), id);
+    public java.util.Map<String, List<SocialDto.Comment>> comments(Authentication principal, @PathVariable long id) {
+        return java.util.Map.of("data", social.comments(who(principal), id));
     }
 
     @PostMapping("/posts/{id}/comments")
@@ -124,8 +124,8 @@ public class SocialController {
     }
 
     @GetMapping("/conversations")
-    public List<SocialDto.Conversation> conversations(Authentication principal) {
-        return social.conversations(who(principal));
+    public java.util.Map<String, List<SocialDto.Conversation>> conversations(Authentication principal) {
+        return java.util.Map.of("data", social.conversations(who(principal)));
     }
 
     @GetMapping("/conversations/{other}/messages")
@@ -142,8 +142,8 @@ public class SocialController {
     }
 
     @GetMapping("/notifications")
-    public List<SocialDto.Notification> notifications(Authentication principal) {
-        return social.notifications(who(principal));
+    public java.util.Map<String, List<SocialDto.Notification>> notifications(Authentication principal) {
+        return java.util.Map.of("data", social.notifications(who(principal)));
     }
 
     @PostMapping("/notifications/{id}/read")
