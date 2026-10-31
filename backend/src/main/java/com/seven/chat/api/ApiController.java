@@ -6,6 +6,7 @@ import java.util.UUID;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -13,27 +14,36 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/v1")
 public class ApiController {
+    private final org.springframework.jdbc.core.JdbcTemplate jdbc;
     private final AuthService auth;
     private final PostService posts;
 
-    public ApiController(AuthService auth, PostService posts) {
+    public ApiController(AuthService auth, PostService posts,
+                         org.springframework.jdbc.core.JdbcTemplate jdbc) {
+        this.jdbc = jdbc;
         this.auth = auth;
         this.posts = posts;
     }
 
     @GetMapping("/health")
     public Map<String, String> health() {
+        Integer database = jdbc.queryForObject("SELECT 1", Integer.class);
+        if (database == null || database != 1) {
+            throw new IllegalStateException("Banco indisponível.");
+        }
         return Map.of("status", "ok");
     }
 
     @PostMapping("/auth/register")
     public ResponseEntity<ApiDto.Session> register(@Valid @RequestBody ApiDto.Register input) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(auth.register(input));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .cacheControl(CacheControl.noStore()).body(auth.register(input));
     }
 
     @PostMapping("/auth/login")
-    public ApiDto.Session login(@Valid @RequestBody ApiDto.Login input) {
-        return auth.login(input);
+    public ResponseEntity<ApiDto.Session> login(@Valid @RequestBody ApiDto.Login input) {
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore())
+                .body(auth.login(input));
     }
 
     @GetMapping("/auth/me")
