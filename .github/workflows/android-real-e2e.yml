@@ -68,6 +68,8 @@ jobs:
           exit 1
 
       - uses: android-actions/setup-android@v4
+        with:
+          cmdline-tools-version: '14742923'
 
       - uses: gradle/actions/setup-gradle@v5
         with:
