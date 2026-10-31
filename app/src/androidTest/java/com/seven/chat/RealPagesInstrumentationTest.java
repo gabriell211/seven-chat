@@ -18,14 +18,19 @@ import org.junit.runner.RunWith;
 import java.util.UUID;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
+import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
 import static androidx.test.espresso.matcher.ViewMatchers.withHint;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.isA;
+import android.widget.ScrollView;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -95,7 +100,7 @@ public final class RealPagesInstrumentationTest {
 
     private void navigate(String item) {
         onView(withText("Menu")).perform(click());
-        onView(withText(item)).perform(click());
+        onView(withText(item)).inRoot(isDialog()).perform(click());
     }
 
     @Test
@@ -136,7 +141,8 @@ public final class RealPagesInstrumentationTest {
             awaitHint("O que você gostaria de publicar?");
             onView(withHint("O que você gostaria de publicar?"))
                     .check(matches(withText("Rascunho preservado na rotação")));
-            onView(withText("Publicar")).perform(click());
+            onView(allOf(withText("Publicar"), isDescendantOfA(isA(ScrollView.class))))
+                    .perform(click());
             awaitText("Rascunho preservado na rotação");
 
             navigate("Conversas");
