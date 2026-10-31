@@ -328,6 +328,26 @@ public class SocialService {
     }
 
     @Transactional(readOnly = true)
+    public List<SocialDto.Conversation> conversations(UUID viewer) {
+        return sql.query("SELECT x.peer_id,a.handle,a.display_name,dm.body,dm.created_at " +
+                "FROM (SELECT CASE WHEN sender_id=:me THEN receiver_id ELSE sender_id END peer_id, " +
+                "MAX(id) last_id FROM direct_messages " +
+                "WHERE sender_id=:me OR receiver_id=:me GROUP BY " +
+                "CASE WHEN sender_id=:me THEN receiver_id ELSE sender_id END) x " +
+                "JOIN direct_messages dm ON dm.id=x.last_id " +
+                "JOIN accounts a ON a.id=x.peer_id " +
+                "WHERE NOT EXISTS (SELECT 1 FROM user_blocks b WHERE " +
+                "(b.blocker_id=:me AND b.blocked_id=x.peer_id) OR " +
+                "(b.blocker_id=x.peer_id AND b.blocked_id=:me)) " +
+                "ORDER BY x.last_id DESC LIMIT 50",
+                Map.of("me", viewer),
+                (row, n) -> new SocialDto.Conversation(
+                        row.getObject("peer_id", UUID.class),
+                        row.getString("handle"), row.getString("display_name"),
+                        row.getString("body"), row.getTimestamp("created_at").toInstant()));
+    }
+
+    @Transactional(readOnly = true)
     public SocialDto.Page<SocialDto.Message> messages(UUID viewer, UUID other,
                                                       Long before, int limit) {
         otherAccount(viewer, other);
