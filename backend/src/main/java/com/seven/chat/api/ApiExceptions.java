@@ -13,6 +13,14 @@ public final class ApiExceptions {
         public Conflict() { super("E-mail ou usuário já cadastrado."); }
     }
 
+    public static final class Forbidden extends RuntimeException {
+        public Forbidden() { super("Você não tem acesso a este recurso."); }
+    }
+
+    public static final class NotFound extends RuntimeException {
+        public NotFound() { super("Recurso não encontrado."); }
+    }
+
     public static final class InvalidInput extends RuntimeException {
         public InvalidInput(String message) { super(message); }
     }
