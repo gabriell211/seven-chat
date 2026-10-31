@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +33,20 @@ class RealHttpEndToEndTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    private String firstHandle;
+    private String secondHandle;
+
+    @AfterEach
+    void cleanupTestAccounts() {
+        // Only accounts generated for this test may be deleted.
+        if (firstHandle != null) {
+            jdbc.update("DELETE FROM accounts WHERE handle=?", firstHandle);
+        }
+        if (secondHandle != null) {
+            jdbc.update("DELETE FROM accounts WHERE handle=?", secondHandle);
+        }
+    }
 
     private final HttpClient http = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
@@ -78,8 +93,8 @@ class RealHttpEndToEndTest {
     @Test
     void realHttpTwoAccountsPersistAndRespectAuthentication() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String firstHandle = "http_a_" + suffix;
-        String secondHandle = "http_b_" + suffix;
+        firstHandle = "http_a_" + suffix;
+        secondHandle = "http_b_" + suffix;
         String password = "uma-senha-bem-segura-2026";
 
         Response health = call("GET", "/health", null, null);
