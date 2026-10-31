@@ -31,6 +31,8 @@ import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.isA;
 import android.widget.ScrollView;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Native UI + emulator + real localhost backend + real PostgreSQL.
@@ -40,6 +42,8 @@ import static org.junit.Assert.assertTrue;
 public final class RealPagesInstrumentationTest {
     private SevenApiClient api;
     private String peerHandle;
+    private String ownerHandle;
+    private String seedPost;
 
     @Before
     public void prepareRealAccounts() throws Exception {
@@ -48,14 +52,19 @@ public final class RealPagesInstrumentationTest {
         api.setBaseUrl("http://10.0.2.2:8080");
         api.signOut();
         String nonce = UUID.randomUUID().toString().substring(0, 8);
-        String ownHandle = "ui_a_" + nonce;
+        ownerHandle = "ui_a_" + nonce;
         peerHandle = "ui_b_" + nonce;
-        JSONObject owner = register(ownHandle);
-        register(peerHandle);
+        JSONObject owner = register(ownerHandle);
+        JSONObject peer = register(peerHandle);
+        api.signIn(peer.getString("accessToken"));
+        api.call("POST", "/api/v1/users/" + owner.getJSONObject("user").getString("id") +
+                "/follow", null);
         api.signIn(owner.getString("accessToken"));
-        api.call("POST", "/api/v1/posts", new JSONObject()
+        seedPost = "Post real de navegação " + nonce;
+        JSONObject created = api.call("POST", "/api/v1/posts", new JSONObject()
                 .put("clientMutationId", UUID.randomUUID().toString())
-                .put("body", "Post real de navegação " + nonce));
+                .put("body", seedPost));
+        api.call("POST", "/api/v1/posts/" + created.getLong("id") + "/save", null);
     }
 
     private JSONObject register(String handle) throws Exception {
@@ -108,9 +117,7 @@ public final class RealPagesInstrumentationTest {
         try (ActivityScenario<OnlineActivity> activity =
                 ActivityScenario.launch(OnlineActivity.class)) {
             // Initial bootstrap verifies stored session; feed is served by PostgreSQL.
-            String ownPost = api.call("GET", "/api/v1/posts?limit=20", null)
-                    .getJSONArray("data").getJSONObject(0).getString("body");
-            awaitText(ownPost);
+            awaitText(seedPost);
 
             navigate("Explorar");
             awaitText("Descobrir pessoas");
@@ -147,14 +154,27 @@ public final class RealPagesInstrumentationTest {
             navigate("Conversas");
             awaitText("Conversas");
             navigate("Notificações");
-            awaitText("Notificações");
+            awaitText("Começou a seguir você.");
+            onView(withText("Marcar como lida")).perform(click());
+
             navigate("Salvos");
-            // The empty state is fetched from the server, not hardcoded as a success.
-            awaitText("Ainda não há publicações");
+            awaitText(seedPost);
             navigate("Perfil");
-            awaitText("Meu perfil");
+            awaitHint("Nome");
+            onView(withHint("Nome"))
+                    .perform(replaceText("Perfil atualizado pelo Android"), closeSoftKeyboard());
+            onView(withHint("Biografia"))
+                    .perform(replaceText("Perfil persistido no PostgreSQL"), closeSoftKeyboard());
+            onView(withText("Salvar alterações")).perform(click());
+            awaitText("Perfil atualizado pelo Android");
+            assertEquals("Perfil persistido no PostgreSQL",
+                    api.call("GET", "/api/v1/users/" + ownerHandle, null).getString("bio"));
+
             navigate("Configurações");
             awaitText("Configurações");
+            onView(withText("Sair da conta")).perform(click());
+            awaitText("Entrar no Seven");
+            assertFalse(api.isSignedIn());
         }
     }
 }
