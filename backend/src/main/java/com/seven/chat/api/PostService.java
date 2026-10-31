@@ -29,13 +29,13 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public ApiDto.Feed feed(Long before, int limit) {
+    public ApiDto.Feed feed(UUID viewer, Long before, int limit) {
         if (before != null && before <= 0) {
             throw new ApiExceptions.InvalidInput("Cursor inválido.");
         }
         if (limit < 1 || limit > 30) {
             throw new ApiExceptions.InvalidInput("O limite deve ficar entre 1 e 30.");
         }
-        return posts.feed(before, limit);
+        return posts.feed(viewer, before, limit);
     }
 }
