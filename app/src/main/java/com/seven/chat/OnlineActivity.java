@@ -372,7 +372,8 @@ public final class OnlineActivity extends Activity {
     private void loadPosts(String endpoint, Long before) {
         String path = endpoint + "?limit=20" + (before == null ? "" : "&before=" + before);
         request("GET", path, null, before == null, response -> {
-            if (before == null) page.removeAllViews();
+            // A new route already has a fresh page. Keep the feed header and refresh
+            // action visible while rendering the first page of real server results.
             JSONArray posts = response.getJSONArray("data");
             if (posts.length() == 0 && before == null) {
                 note("Ainda não há publicações", "O servidor não retornou itens para esta conta.");
