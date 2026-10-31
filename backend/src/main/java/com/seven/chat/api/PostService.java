@@ -24,8 +24,20 @@ public class PostService {
             throw new ApiExceptions.InvalidInput("A publicação excede 2.000 caracteres.");
         }
         ApiDto.CreatePost safe = new ApiDto.CreatePost(input.clientMutationId(), normalized);
-        return posts.findMutation(userId, input.clientMutationId())
-                .orElseGet(() -> posts.create(userId, safe));
+        java.util.Optional<ApiDto.Post> existing =
+                posts.findMutation(userId, input.clientMutationId());
+        if (existing.isPresent()) {
+            if (!existing.get().body().equals(normalized)) {
+                throw new ApiExceptions.Conflict();
+            }
+            return existing.get();
+        }
+        try {
+            return posts.create(userId, safe);
+        } catch (org.springframework.dao.DataIntegrityViolationException conflict) {
+            // A concurrent identical UUID is never allowed to duplicate a post.
+            throw new ApiExceptions.Conflict();
+        }
     }
 
     @Transactional(readOnly = true)
