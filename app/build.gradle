@@ -4,6 +4,7 @@ plugins {
 
 android {
     namespace 'com.seven.chat'
+    buildFeatures { buildConfig true }
     compileSdk 35
 
     defaultConfig {
