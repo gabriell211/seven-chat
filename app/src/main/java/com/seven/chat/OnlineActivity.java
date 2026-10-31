@@ -53,7 +53,13 @@ public final class OnlineActivity extends Activity {
         root = UiKit.vertical(this);
         root.setBackgroundColor(UiKit.BACKGROUND);
         setContentView(root);
-        navigate(api.baseUrl().isEmpty() ? "server" : api.isSignedIn() ? "feed" : "login");
+        if (api.baseUrl().isEmpty()) {
+            navigate("server");
+        } else if (!api.isSignedIn()) {
+            navigate("login");
+        } else {
+            navigate("bootstrap");
+        }
     }
 
     @Override
@@ -96,6 +102,7 @@ public final class OnlineActivity extends Activity {
         root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
 
         switch (next) {
+            case "bootstrap": bootstrap(); break;
             case "server": server(); break;
             case "login": login(false); break;
             case "register": login(true); break;
@@ -236,6 +243,15 @@ public final class OnlineActivity extends Activity {
             throw new IllegalStateException(e);
         }
         return obj;
+    }
+
+    private void bootstrap() {
+        heading("Autenticando", "Validando sua sessão no servidor.");
+        request("GET", "/api/v1/auth/me", null, false, account -> {
+            meId = account.getString("id");
+            myHandle = account.getString("handle");
+            navigate("feed");
+        });
     }
 
     private void server() {
@@ -461,7 +477,7 @@ public final class OnlineActivity extends Activity {
                         EditText bio = input("Biografia", 160, true);
                         bio.setText(p.optString("bio"));
                         button("Salvar alterações", true, () ->
-                                request("PATCH", "/api/v1/users/me",
+                                request("POST", "/api/v1/users/me",
                                         json("displayName", name.getText().toString(),
                                                 "bio", bio.getText().toString()),
                                         false, updated -> navigate("profile")));
