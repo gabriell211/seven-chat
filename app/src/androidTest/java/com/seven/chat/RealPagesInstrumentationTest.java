@@ -26,9 +26,10 @@ import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
 import static androidx.test.espresso.matcher.ViewMatchers.withHint;
+import static androidx.test.espresso.matcher.ViewMatchers.withClassName;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.isA;
+import static org.hamcrest.Matchers.is;
 import android.widget.ScrollView;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -147,7 +148,7 @@ public final class RealPagesInstrumentationTest {
             awaitHint("O que você gostaria de publicar?");
             onView(withHint("O que você gostaria de publicar?"))
                     .check(matches(withText("Rascunho preservado na rotação")));
-            onView(allOf(withText("Publicar"), isDescendantOfA(isA(ScrollView.class))))
+            onView(allOf(withText("Publicar"), isDescendantOfA(withClassName(is(ScrollView.class.getName())))))
                     .perform(click());
             awaitText("Rascunho preservado na rotação");
 
