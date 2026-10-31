@@ -40,7 +40,7 @@ public final class SevenApiClient {
         try {
             URI url = URI.create(value.trim());
             if (!"https".equalsIgnoreCase(url.getScheme()) ||
-                    url.getHost() == null || url.getHost().isBlank() ||
+                    url.getHost() == null || url.getHost().trim().isEmpty() ||
                     url.getRawUserInfo() != null || url.getRawQuery() != null ||
                     url.getRawFragment() != null ||
                     url.getPath() != null && !url.getPath().isEmpty() &&
@@ -125,7 +125,7 @@ public final class SevenApiClient {
                 }
                 throw new ApiError(status, message);
             }
-            return text.isBlank() ? new JSONObject() : new JSONObject(text);
+            return text.trim().isEmpty() ? new JSONObject() : new JSONObject(text);
         } finally {
             connection.disconnect();
         }
