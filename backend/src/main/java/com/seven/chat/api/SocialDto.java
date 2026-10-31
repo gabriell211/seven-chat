@@ -32,6 +32,9 @@ public final class SocialDto {
     public record Message(long id, UUID senderId, UUID receiverId,
                           String body, Instant createdAt) {}
 
+    public record Conversation(UUID peerId, String handle, String displayName,
+                               String lastMessage, Instant updatedAt) {}
+
     public record Notification(long id, UUID actorId, String actorHandle,
                                String eventType, Long resourceId, Instant createdAt,
                                boolean seen) {}
