@@ -166,7 +166,7 @@ public final class RealPagesInstrumentationTest {
             onView(withHint("Nome"))
                     .perform(replaceText("Perfil atualizado pelo Android"), closeSoftKeyboard());
             onView(withHint("Biografia"))
-                    .perform(replaceText("Perfil persistido no PostgreSQL"), closeSoftKeyboard());
+                    .perform(scrollTo(), replaceText("Perfil persistido no PostgreSQL"), closeSoftKeyboard());
             onView(withText("Salvar alterações")).perform(scrollTo(), click());
             awaitText("Perfil atualizado pelo Android");
             assertEquals("Perfil persistido no PostgreSQL",
