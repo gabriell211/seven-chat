@@ -18,6 +18,8 @@ public final class SocialDto {
             @NotBlank @Size(max = 60) String displayName,
             @Size(max = 160) String bio) {}
 
+    public record EditPost(@NotBlank @Size(max = 2000) String body) {}
+
     public record CreateComment(@NotBlank @Size(max = 500) String body) {}
 
     public record Comment(long id, long postId, UUID authorId, String handle,
