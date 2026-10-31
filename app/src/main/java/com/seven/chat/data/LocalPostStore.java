@@ -81,7 +81,7 @@ public final class LocalPostStore extends SQLiteOpenHelper {
         List<String> params = new ArrayList<>();
         params.add(archivedOnly ? "1" : "0");
         if (!filter.isEmpty()) {
-            where.append(" AND caption LIKE ? ESCAPE '\\\\'");
+            where.append(" AND caption LIKE ? ESCAPE '\\'");
             params.add("%" + filter.replace("\\", "\\\\").replace("%", "\\%")
                     .replace("_", "\\_") + "%");
         }
