@@ -39,7 +39,13 @@ public final class SevenApiClient {
     public static String validateBaseUrl(String value) {
         try {
             URI url = URI.create(value.trim());
-            if (!"https".equalsIgnoreCase(url.getScheme()) ||
+            boolean secure = "https".equalsIgnoreCase(url.getScheme());
+            boolean localDebug = BuildConfig.DEBUG &&
+                    "http".equalsIgnoreCase(url.getScheme()) &&
+                    ("10.0.2.2".equalsIgnoreCase(url.getHost()) ||
+                     "localhost".equalsIgnoreCase(url.getHost()) ||
+                     "127.0.0.1".equalsIgnoreCase(url.getHost()));
+            if ((!secure && !localDebug) ||
                     url.getHost() == null || url.getHost().trim().isEmpty() ||
                     url.getRawUserInfo() != null || url.getRawQuery() != null ||
                     url.getRawFragment() != null ||
