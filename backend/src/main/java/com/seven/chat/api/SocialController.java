@@ -136,7 +136,7 @@ public class SocialController {
 
     @PostMapping("/posts/{id}/edit")
     public ApiDto.Post editPost(Authentication principal, @PathVariable long id,
-                                @Valid @RequestBody ApiDto.CreatePost input) {
+                                @Valid @RequestBody SocialDto.EditPost input) {
         return social.editPost(who(principal), id, input.body());
     }
 
