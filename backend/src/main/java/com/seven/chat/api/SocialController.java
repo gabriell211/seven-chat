@@ -123,6 +123,11 @@ public class SocialController {
         social.deletePost(who(principal), id);
     }
 
+    @GetMapping("/conversations")
+    public List<SocialDto.Conversation> conversations(Authentication principal) {
+        return social.conversations(who(principal));
+    }
+
     @GetMapping("/conversations/{other}/messages")
     public SocialDto.Page<SocialDto.Message> messages(Authentication principal,
           @PathVariable UUID other, @RequestParam(required = false) Long before,
