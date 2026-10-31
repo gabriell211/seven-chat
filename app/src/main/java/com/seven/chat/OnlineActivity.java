@@ -110,6 +110,9 @@ public final class OnlineActivity extends Activity {
             case "saved": feed(true); break;
             case "explore": explore(); break;
             case "user": showUser(); break;
+            case "followers": relations(true); break;
+            case "following": relations(false); break;
+            case "blocks": blockedUsers(); break;
             case "compose": compose(); break;
             case "profile": profile(); break;
             case "chats": chats(); break;
@@ -381,6 +384,48 @@ public final class OnlineActivity extends Activity {
         row.addView(text, new LinearLayout.LayoutParams(0, dp(48), 1));
     }
 
+    private void relations(boolean followers) {
+        heading(followers ? "Seguidores" : "Seguindo",
+                "Relações reais gravadas no servidor.");
+        if (selectedId.isEmpty()) {
+            note("Perfil necessário", "Abra um perfil para consultar a lista.");
+            return;
+        }
+        request("GET", "/api/v1/users/" + SevenApiClient.segment(selectedId) +
+                (followers ? "/followers" : "/following"), null, true, response -> {
+            JSONArray people = response.getJSONArray("data");
+            if (people.length() == 0) note("Nenhum perfil encontrado",
+                    "Esta lista ainda não possui pessoas.");
+            for (int i = 0; i < people.length(); i++) {
+                JSONObject person = people.getJSONObject(i);
+                String id = person.getString("id");
+                String handle = person.getString("handle");
+                button(person.optString("displayName") + "  @" + handle, false, () -> {
+                    selectedId = id;
+                    selectedHandle = handle;
+                    navigate("user");
+                });
+            }
+        });
+    }
+
+    private void blockedUsers() {
+        heading("Bloqueios", "Sua lista privada de usuários bloqueados.");
+        request("GET", "/api/v1/users/me/blocks", null, true, response -> {
+            JSONArray people = response.getJSONArray("data");
+            if (people.length() == 0) note("Sem bloqueios", "Você não bloqueou nenhuma pessoa.");
+            for (int i = 0; i < people.length(); i++) {
+                JSONObject person = people.getJSONObject(i);
+                String id = person.getString("id");
+                String handle = person.getString("handle");
+                button("Desbloquear @" + handle, false, () -> {
+                    request("DELETE", "/api/v1/users/" + SevenApiClient.segment(id) +
+                            "/block", null, false, result -> navigate("blocks"));
+                });
+            }
+        });
+    }
+
     private void compose() {
         heading("Nova publicação", "Seu texto será enviado ao servidor; nada é inventado localmente.");
         EditText body = input("O que você gostaria de publicar?", 2000, true);
@@ -441,6 +486,8 @@ public final class OnlineActivity extends Activity {
                             profile.optLong("following") + " seguindo · " +
                             profile.optLong("posts") + " posts");
                     selectedId = profile.getString("id");
+                    button("Ver seguidores", false, () -> navigate("followers"));
+                    button("Ver seguindo", false, () -> navigate("following"));
                     if (!meId.equals(selectedId)) {
                         boolean following = profile.optBoolean("followedByMe");
                         button(following ? "Deixar de seguir" : "Seguir", true, () ->
@@ -472,6 +519,10 @@ public final class OnlineActivity extends Activity {
                         note("Estatísticas", p.optLong("followers") + " seguidores · " +
                                 p.optLong("following") + " seguindo · " +
                                 p.optLong("posts") + " posts");
+                        selectedId = meId;
+                        selectedHandle = myHandle;
+                        button("Seguidores", false, () -> navigate("followers"));
+                        button("Seguindo", false, () -> navigate("following"));
                         EditText name = input("Nome", 60, false);
                         name.setText(p.getString("displayName"));
                         EditText bio = input("Biografia", 160, true);
@@ -620,6 +671,7 @@ public final class OnlineActivity extends Activity {
         heading("Configurações", "Segurança, servidor e sessão.");
         note("Servidor atual", api.baseUrl());
         button("Trocar servidor", false, () -> navigate("server"));
+        button("Usuários bloqueados", false, () -> navigate("blocks"));
         button("Sair da conta", true, () -> request("POST", "/api/v1/auth/logout",
                 null, false, result -> {
                     api.signOut();
