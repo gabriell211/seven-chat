@@ -22,6 +22,7 @@ import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
+import static androidx.test.espresso.action.ViewActions.scrollTo;
 import static androidx.test.espresso.assertion.ViewAssertions.matches;
 import static androidx.test.espresso.matcher.ViewMatchers.isDisplayed;
 import static androidx.test.espresso.matcher.ViewMatchers.isDescendantOfA;
@@ -128,12 +129,12 @@ public final class RealPagesInstrumentationTest {
             awaitText("Resultados");
             onView(withText("Conta real " + peerHandle + "  @" + peerHandle)).perform(click());
             awaitText("Seguir");
-            onView(withText("Seguir")).perform(click());
+            onView(withText("Seguir")).perform(scrollTo(), click());
             awaitText("Deixar de seguir");
             assertTrue(api.call("GET", "/api/v1/users/" + peerHandle, null)
                     .getBoolean("followedByMe"));
 
-            onView(withText("Enviar mensagem")).perform(click());
+            onView(withText("Enviar mensagem")).perform(scrollTo(), click());
             awaitHint("Escreva sua mensagem");
             onView(withHint("Escreva sua mensagem"))
                     .perform(replaceText("Mensagem enviada pela tela Android"), closeSoftKeyboard());
@@ -149,14 +150,14 @@ public final class RealPagesInstrumentationTest {
             onView(withHint("O que você gostaria de publicar?"))
                     .check(matches(withText("Rascunho preservado na rotação")));
             onView(allOf(withText("Publicar"), isDescendantOfA(withClassName(is(ScrollView.class.getName())))))
-                    .perform(click());
+                    .perform(scrollTo(), click());
             awaitText("Rascunho preservado na rotação");
 
             navigate("Conversas");
             awaitText("Conversas");
             navigate("Notificações");
             awaitText("Começou a seguir você.");
-            onView(withText("Marcar como lida")).perform(click());
+            onView(withText("Marcar como lida")).perform(scrollTo(), click());
 
             navigate("Salvos");
             awaitText(seedPost);
@@ -166,14 +167,14 @@ public final class RealPagesInstrumentationTest {
                     .perform(replaceText("Perfil atualizado pelo Android"), closeSoftKeyboard());
             onView(withHint("Biografia"))
                     .perform(replaceText("Perfil persistido no PostgreSQL"), closeSoftKeyboard());
-            onView(withText("Salvar alterações")).perform(click());
+            onView(withText("Salvar alterações")).perform(scrollTo(), click());
             awaitText("Perfil atualizado pelo Android");
             assertEquals("Perfil persistido no PostgreSQL",
                     api.call("GET", "/api/v1/users/" + ownerHandle, null).getString("bio"));
 
             navigate("Configurações");
             awaitText("Configurações");
-            onView(withText("Sair da conta")).perform(click());
+            onView(withText("Sair da conta")).perform(scrollTo(), click());
             awaitText("Entrar no Seven");
             assertFalse(api.isSignedIn());
         }
