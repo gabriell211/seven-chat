@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.TextWatcher;
+import android.text.Editable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
@@ -44,6 +46,12 @@ public final class OnlineActivity extends Activity {
     private long selectedPost;
     private Long cursor;
     private String searchQuery = "";
+    private String restoreRoute = "feed";
+    private String draftCaption = "";
+    private String draftMutationId = UUID.randomUUID().toString();
+    private String messageDraft = "";
+    private String messageDraftPeerId = "";
+    private String messageMutationId = UUID.randomUUID().toString();
 
     private interface JsonAction { void accept(JSONObject json) throws JSONException; }
 
@@ -54,6 +62,23 @@ public final class OnlineActivity extends Activity {
         root = UiKit.vertical(this);
         root.setBackgroundColor(UiKit.BACKGROUND);
         setContentView(root);
+        if (saved != null) {
+            restoreRoute = saved.getString("route", "feed");
+            if (restoreRoute == null || restoreRoute.equals("server")
+                    || restoreRoute.equals("login") || restoreRoute.equals("register")
+                    || restoreRoute.equals("bootstrap")) {
+                restoreRoute = "feed";
+            }
+            selectedId = saved.getString("selected_id", "");
+            selectedHandle = saved.getString("selected_handle", "");
+            selectedPost = saved.getLong("selected_post", 0L);
+            searchQuery = saved.getString("search", "");
+            draftCaption = saved.getString("draft_caption", "");
+            draftMutationId = saved.getString("draft_mutation", draftMutationId);
+            messageDraft = saved.getString("message_draft", "");
+            messageDraftPeerId = saved.getString("message_peer", "");
+            messageMutationId = saved.getString("message_mutation", messageMutationId);
+        }
         if (api.baseUrl().isEmpty()) {
             navigate("server");
         } else if (!api.isSignedIn()) {
@@ -61,6 +86,31 @@ public final class OnlineActivity extends Activity {
         } else {
             navigate("bootstrap");
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle out) {
+        out.putString("route", route);
+        out.putString("selected_id", selectedId);
+        out.putString("selected_handle", selectedHandle);
+        out.putLong("selected_post", selectedPost);
+        out.putString("search", searchQuery);
+        out.putString("draft_caption", draftCaption);
+        out.putString("draft_mutation", draftMutationId);
+        out.putString("message_draft", messageDraft);
+        out.putString("message_peer", messageDraftPeerId);
+        out.putString("message_mutation", messageMutationId);
+        super.onSaveInstanceState(out);
+    }
+
+    private void onInput(EditText field, java.util.function.Consumer<String> change) {
+        field.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                change.accept(s.toString());
+            }
+            @Override public void afterTextChanged(Editable value) { }
+        });
     }
 
     @Override
@@ -254,7 +304,7 @@ public final class OnlineActivity extends Activity {
         request("GET", "/api/v1/auth/me", null, false, account -> {
             meId = account.getString("id");
             myHandle = account.getString("handle");
-            navigate("feed");
+            navigate(restoreRoute);
         });
     }
 
@@ -455,15 +505,20 @@ public final class OnlineActivity extends Activity {
         heading("Nova publicação", "Seu texto será enviado ao servidor; nada é inventado localmente.");
         EditText body = input("O que você gostaria de publicar?", 2000, true);
         body.setMinLines(5);
-        final String mutationId = UUID.randomUUID().toString();
+        body.setText(draftCaption);
+        onInput(body, value -> draftCaption = value);
         button("Publicar", true, () -> {
             if (body.getText().toString().trim().isEmpty()) {
                 displayError("Escreva uma publicação.");
                 return;
             }
             request("POST", "/api/v1/posts",
-                    json("clientMutationId", mutationId, "body", body.getText().toString()),
-                    false, result -> navigate("feed"));
+                    json("clientMutationId", draftMutationId, "body", body.getText().toString()),
+                    false, result -> {
+                        draftCaption = "";
+                        draftMutationId = UUID.randomUUID().toString();
+                        navigate("feed");
+                    });
         });
     }
 
@@ -588,12 +643,22 @@ public final class OnlineActivity extends Activity {
     private void thread() {
         heading("Conversa com @" + selectedHandle, "Mensagens armazenadas no servidor. Atualize para buscar novas mensagens.");
         button("Atualizar conversa", false, () -> navigate("thread"));
+        if (!selectedId.equals(messageDraftPeerId)) {
+            messageDraft = "";
+            messageDraftPeerId = selectedId;
+            messageMutationId = UUID.randomUUID().toString();
+        }
         EditText message = input("Escreva sua mensagem", 4000, true);
-        final String mutationId = UUID.randomUUID().toString();
+        message.setText(messageDraft);
+        onInput(message, value -> messageDraft = value);
         button("Enviar", true, () -> request("POST", "/api/v1/conversations/" +
                 SevenApiClient.segment(selectedId) + "/messages",
-                json("clientMutationId", mutationId, "body", message.getText().toString()),
-                false, result -> navigate("thread")));
+                json("clientMutationId", messageMutationId, "body", message.getText().toString()),
+                false, result -> {
+                    messageDraft = "";
+                    messageMutationId = UUID.randomUUID().toString();
+                    navigate("thread");
+                }));
         request("GET", "/api/v1/conversations/" + SevenApiClient.segment(selectedId) +
                 "/messages?limit=30", null, true, response -> {
             JSONArray messages = response.getJSONArray("data");
