@@ -75,28 +75,49 @@
   },
   "required_integrations": {
     "android-build": {
-      "status": "pending",
-      "evidence": []
+      "status": "homologated",
+      "evidence": [
+        "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+      ],
+      "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41241716843"
     },
     "backend-build": {
-      "status": "pending",
-      "evidence": []
+      "status": "homologated",
+      "evidence": [
+        "backend/src/test/java/com/seven/chat/api/RealHttpEndToEndTest.java"
+      ],
+      "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41241716694"
     },
     "postgresql-integration": {
-      "status": "pending",
-      "evidence": []
+      "status": "homologated",
+      "evidence": [
+        "backend/src/test/java/com/seven/chat/api/RealHttpEndToEndTest.java",
+        "backend/src/test/java/com/seven/chat/api/SocialIntegrationTest.java"
+      ],
+      "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41240374286"
     },
     "real-two-account-e2e": {
-      "status": "pending",
-      "evidence": []
+      "status": "homologated",
+      "evidence": [
+        "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+      ],
+      "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41240831322"
     },
     "login-session-revocation": {
-      "status": "pending",
-      "evidence": []
+      "status": "homologated",
+      "evidence": [
+        "backend/src/test/java/com/seven/chat/api/ApiHttpSecurityTest.java",
+        "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+      ],
+      "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41240831322"
     },
     "security-authorization": {
-      "status": "pending",
-      "evidence": []
+      "status": "homologated",
+      "evidence": [
+        "backend/src/test/java/com/seven/chat/api/SocialHttpContractTest.java",
+        "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+      ],
+      "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41240831322"
     },
     "media-storage": {
       "status": "pending",
