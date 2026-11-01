@@ -26,6 +26,11 @@ android {
 
     testOptions {
         unitTests.includeAndroidResources = true
+        unitTests.all {
+            // Robolectric downloads Android runtime jars during tests; use stable Maven Central.
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+            systemProperty 'robolectric.dependency.repo.id', 'mavenCentral'
+        }
     }
 
     compileOptions {
