@@ -120,6 +120,48 @@ public final class RealPagesInstrumentationTest {
     }
 
     @Test
+    public void registerLogoutAndLoginUsingRealAndroidFormsAndDatabase() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String handle = "reg_ui_" + suffix;
+        String email = handle + "@seven.test";
+        String password = "senha-real-para-qa-2026";
+        api.signOut();
+
+        try (ActivityScenario<OnlineActivity> activity =
+                ActivityScenario.launch(OnlineActivity.class)) {
+            awaitText("Entrar no Seven");
+            onView(withText("Criar conta")).perform(click());
+            awaitText("Criar conta");
+
+            onView(withHint("E-mail")).perform(replaceText(email), closeSoftKeyboard());
+            onView(withHint("Usuário: letras minúsculas, números, _"))
+                    .perform(replaceText(handle), closeSoftKeyboard());
+            onView(withHint("Nome de exibição"))
+                    .perform(replaceText("Cadastro real pelo Android"), closeSoftKeyboard());
+            onView(withHint("Senha")).perform(replaceText(password), closeSoftKeyboard());
+            onView(withText("Cadastrar")).perform(scrollTo(), click());
+
+            awaitText("Publicações reais de usuários cadastrados.");
+            assertTrue("A sessão deve ser armazenada pelo Android", api.isSignedIn());
+            assertEquals(handle,
+                    api.call("GET", "/api/v1/auth/me", null).getString("handle"));
+
+            navigate("Configurações");
+            awaitText("Configurações");
+            onView(withText("Sair da conta")).perform(scrollTo(), click());
+            awaitText("Entrar no Seven");
+            assertFalse("O logout deve limpar o token local", api.isSignedIn());
+
+            onView(withHint("E-mail")).perform(replaceText(email), closeSoftKeyboard());
+            onView(withHint("Senha")).perform(replaceText(password), closeSoftKeyboard());
+            onView(withText("Entrar")).perform(scrollTo(), click());
+            awaitText("Publicações reais de usuários cadastrados.");
+            assertEquals(handle,
+                    api.call("GET", "/api/v1/auth/me", null).getString("handle"));
+        }
+    }
+
+    @Test
     public void realNativePagesPublishSearchFollowChatAndRestoreDraftAfterRotation()
             throws Exception {
         try (ActivityScenario<OnlineActivity> activity =
