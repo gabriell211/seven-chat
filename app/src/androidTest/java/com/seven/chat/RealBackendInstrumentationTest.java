@@ -48,6 +48,23 @@ public final class RealBackendInstrumentationTest {
     }
 
     @Test
+    public void vipAccessFollowsServerEntitlement() throws Exception {
+        String handle = "vipcheck_" + UUID.randomUUID().toString().substring(0, 8);
+        JSONObject registered = register(handle);
+        api.signIn(registered.getString("accessToken"));
+        assertFalse(api.call("GET", "/api/v1/vip/me", null).getBoolean("active"));
+
+        try {
+            api.call("POST", "/api/v1/groups", new JSONObject()
+                    .put("name", "Grupo restrito")
+                    .put("vipOnly", true));
+            fail("VIP não autorizado");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(403, expected.status);
+        }
+    }
+
+    @Test
     public void privateGroupsReportsPrivacyAndErasureUseRealPostgresql() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String ownerHandle = "a_grp_" + suffix;
