@@ -145,6 +145,8 @@ public final class RealPagesInstrumentationTest {
             assertTrue(api.call("GET", "/api/v1/groups", null)
                     .getJSONArray("data").toString().contains(groupName));
 
+            navigate("Seven VIP");
+            awaitText("VIP inativo");
             navigate("Configurações");
             awaitText("Configurações");
             onView(withText("Privacidade e dados")).perform(scrollTo(), click());
