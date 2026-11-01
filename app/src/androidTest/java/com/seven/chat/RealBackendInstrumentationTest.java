@@ -48,6 +48,83 @@ public final class RealBackendInstrumentationTest {
     }
 
     @Test
+    public void privateGroupsReportsPrivacyAndErasureUseRealPostgresql() throws Exception {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String ownerHandle = "a_grp_" + suffix;
+        String guestHandle = "b_grp_" + suffix;
+        JSONObject owner = register(ownerHandle);
+        JSONObject guest = register(guestHandle);
+        String ownerToken = owner.getString("accessToken");
+        String guestToken = guest.getString("accessToken");
+
+        api.signIn(ownerToken);
+        JSONObject group = api.call("POST", "/api/v1/groups",
+                new JSONObject().put("name", "Equipe Android QA")
+                        .put("description", "Grupo real no PostgreSQL"));
+        String groupId = group.getString("id");
+        assertEquals(1, group.getLong("memberCount"));
+        api.call("POST", "/api/v1/groups/" + groupId + "/invitations",
+                new JSONObject().put("handle", guestHandle));
+
+        api.signIn(guestToken);
+        try {
+            api.call("GET", "/api/v1/groups/" + groupId, null);
+            fail("Grupo privado deve negar acesso antes do aceite.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(404, expected.status);
+        }
+        JSONObject invitations = api.call("GET", "/api/v1/groups/invitations", null);
+        assertEquals(1, invitations.getJSONArray("data").length());
+        String invitationId = invitations.getJSONArray("data").getJSONObject(0).getString("id");
+        api.call("POST", "/api/v1/groups/invitations/" + invitationId + "/accept", null);
+        JSONObject message = new JSONObject()
+                .put("clientMutationId", UUID.randomUUID().toString())
+                .put("body", "Mensagem privada via Android real");
+        JSONObject saved = api.call("POST", "/api/v1/groups/" + groupId + "/messages", message);
+        assertEquals(saved.getLong("id"), api.call("POST",
+                "/api/v1/groups/" + groupId + "/messages", message).getLong("id"));
+
+        api.signIn(ownerToken);
+        assertTrue(api.call("GET", "/api/v1/groups/" + groupId + "/messages", null)
+                .getJSONArray("data").toString().contains("Mensagem privada via Android real"));
+
+        JSONObject report = api.call("POST", "/api/v1/moderation/reports", new JSONObject()
+                .put("targetType", "account")
+                .put("targetId", guest.getJSONObject("user").getString("id"))
+                .put("category", "spam")
+                .put("details", "Denúncia de teste"));
+        assertEquals("OPEN", report.getString("status"));
+        try {
+            api.call("GET", "/api/v1/moderation/queue", null);
+            fail("Usuário comum não pode revisar denúncias.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(403, expected.status);
+        }
+
+        JSONObject consent = api.call("POST", "/api/v1/privacy/consents",
+                new JSONObject().put("consentType", "marketing")
+                        .put("documentVersion", "2026.11")
+                        .put("granted", false));
+        assertFalse(consent.getBoolean("granted"));
+        JSONObject exported = api.call("GET", "/api/v1/privacy/export", null);
+        assertEquals(ownerHandle, exported.getJSONObject("account").getString("handle"));
+        assertFalse(exported.toString().contains(ownerToken));
+
+        api.call("POST", "/api/v1/privacy/delete-account",
+                new JSONObject().put("password", "uma-senha-segura-para-teste")
+                        .put("confirmation", "DELETE MY ACCOUNT"));
+        try {
+            api.call("GET", "/api/v1/auth/me", null);
+            fail("Conta excluída não pode manter sessão ativa.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(401, expected.status);
+        }
+        api.signIn(guestToken);
+        assertEquals(0, api.call("GET", "/api/v1/groups", null)
+                .getJSONArray("data").length());
+    }
+
+    @Test
     public void registerPublishDirectMessageAndRevokeSessionOnRealServer() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         JSONObject first = register("emua_" + suffix);
