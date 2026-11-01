@@ -34,6 +34,15 @@ android {
     }
 }
 
+// AndroidX Activity and the legacy test toolchain must resolve one Kotlin runtime.
+configurations.configureEach {
+    resolutionStrategy.force(
+        'org.jetbrains.kotlin:kotlin-stdlib:1.8.22',
+        'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22',
+        'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+    )
+}
+
 dependencies {
     implementation 'androidx.activity:activity:1.9.3'
     testImplementation 'junit:junit:4.13.2'
