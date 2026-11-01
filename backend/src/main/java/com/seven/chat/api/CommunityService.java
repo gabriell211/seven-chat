@@ -145,14 +145,19 @@ public class CommunityService {
 
     @Transactional
     public CommunityDto.Group accept(UUID viewer, UUID invitation) {
+        Map<String, ?> request = Map.of("id", invitation, "viewer", viewer);
+        List<UUID> pending = sql.query("SELECT group_id FROM group_invitations " +
+                "WHERE id=:id AND invitee_id=:viewer AND status='PENDING'",
+                request, (r, i) -> r.getObject(1, UUID.class));
+        if (pending.isEmpty()) throw new ApiExceptions.NotFound();
+        // Entitlement is verified before modifying invitation state.
+        requireVipIfRestricted(viewer, pending.get(0));
         List<UUID> groups = sql.query("UPDATE group_invitations SET status='ACCEPTED'," +
                 "updated_at=CURRENT_TIMESTAMP WHERE id=:id AND invitee_id=:viewer " +
                 "AND status='PENDING' RETURNING group_id",
-                Map.of("id", invitation, "viewer", viewer),
-                (r, i) -> r.getObject(1, UUID.class));
+                request, (r, i) -> r.getObject(1, UUID.class));
         if (groups.isEmpty()) throw new ApiExceptions.NotFound();
         UUID group = groups.get(0);
-        requireVipIfRestricted(viewer, group);
         UUID owner = sql.queryForObject("SELECT owner_id FROM chat_groups WHERE id=:id",
                 Map.of("id", group), UUID.class);
         if (owner == null) throw new ApiExceptions.NotFound();
