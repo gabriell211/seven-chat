@@ -48,7 +48,7 @@ if len(page_switch) != 2:
     cases = set()
 else:
     page_section = page_switch[1].split("\n        }\n\n        if (api.isSignedIn()", 1)[0]
-    cases = set(re.findall(r'case\s+"([a-z]+)"\s*:\s*', page_section))
+    cases = set(re.findall(r'case\s+"([a-z-]+)"\s*:\s*', page_section))
 if not functional <= cases:
     problems.append(f"Páginas funcionais sem implementação: {functional-cases}")
 if (set(nav) - cases) != gated:
