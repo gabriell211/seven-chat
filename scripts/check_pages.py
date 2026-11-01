@@ -14,9 +14,9 @@ functional = {
     "feed", "explore", "compose", "chats", "profile", "notifications", "saved",
     "comments", "user", "thread", "settings", "followers", "following", "blocks",
     "server", "login", "register", "bootstrap", "groups", "group-invites", "group-thread",
-    "privacy", "report",
+    "privacy", "report", "vip",
 }
-gated = {"stories", "reels", "rooms", "live", "calls", "gifts", "wallet", "vip"}
+gated = {"stories", "reels", "rooms", "live", "calls", "gifts", "wallet"}
 required_navigation = {
     "feed", "explore", "compose", "chats", "profile", "notifications", "saved",
     "stories", "reels", "groups", "rooms", "live", "calls", "gifts", "wallet", "vip", "settings",
