@@ -14,9 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CommunityService {
     private final NamedParameterJdbcTemplate sql;
+    private final VipEntitlementService vip;
 
-    public CommunityService(NamedParameterJdbcTemplate sql) {
+    public CommunityService(NamedParameterJdbcTemplate sql, VipEntitlementService vip) {
         this.sql = sql;
+        this.vip = vip;
     }
 
     private long count(String query, Map<String, ?> args) {
@@ -33,6 +35,14 @@ public class CommunityService {
         if (!member(viewer, group)) throw new ApiExceptions.NotFound();
     }
 
+    private void requireVipIfRestricted(UUID viewer, UUID group) {
+        List<Boolean> restricted = sql.query(
+                "SELECT vip_only FROM chat_groups WHERE id=:group",
+                Map.of("group", group), (row, i) -> row.getBoolean(1));
+        if (restricted.isEmpty()) throw new ApiExceptions.NotFound();
+        if (restricted.get(0)) vip.requireActive(viewer);
+    }
+
     private void requireOwner(UUID viewer, UUID group) {
         if (count("SELECT COUNT(*) FROM chat_groups WHERE id=:group AND owner_id=:viewer",
                 Map.of("group", group, "viewer", viewer)) == 0) {
@@ -44,11 +54,11 @@ public class CommunityService {
         return new CommunityDto.Group(r.getObject("id", UUID.class),
                 r.getObject("owner_id", UUID.class), r.getString("name"),
                 r.getString("description"), r.getLong("member_count"),
-                r.getTimestamp("created_at").toInstant());
+                r.getTimestamp("created_at").toInstant(), r.getBoolean("vip_only"));
     }
 
     private static String groupSelect() {
-        return "SELECT g.id,g.owner_id,g.name,g.description,g.created_at," +
+        return "SELECT g.id,g.owner_id,g.name,g.description,g.created_at,g.vip_only," +
                 "(SELECT COUNT(*) FROM group_members gm WHERE gm.group_id=g.id) member_count " +
                 "FROM chat_groups g ";
     }
@@ -59,9 +69,12 @@ public class CommunityService {
         String name = input.name().trim();
         String description = input.description() == null ? "" : input.description().trim();
         if (name.length() < 3) throw new ApiExceptions.InvalidInput("Nome de grupo muito curto.");
-        sql.update("INSERT INTO chat_groups (id,owner_id,name,description) " +
-                        "VALUES (:id,:viewer,:name,:description)",
-                Map.of("id", id, "viewer", viewer, "name", name, "description", description));
+        boolean vipOnly = Boolean.TRUE.equals(input.vipOnly());
+        if (vipOnly) vip.requireActive(viewer);
+        sql.update("INSERT INTO chat_groups (id,owner_id,name,description,vip_only) " +
+                        "VALUES (:id,:viewer,:name,:description,:vip)",
+                Map.of("id", id, "viewer", viewer, "name", name,
+                        "description", description, "vip", vipOnly));
         sql.update("INSERT INTO group_members (group_id,account_id) VALUES (:id,:viewer)",
                 Map.of("id", id, "viewer", viewer));
         return get(viewer, id);
@@ -78,6 +91,7 @@ public class CommunityService {
     @Transactional(readOnly = true)
     public CommunityDto.Group get(UUID viewer, UUID group) {
         requireMember(viewer, group);
+        requireVipIfRestricted(viewer, group);
         List<CommunityDto.Group> groups = sql.query(groupSelect() + "WHERE g.id=:group",
                 Map.of("group", group), this::groupRow);
         if (groups.isEmpty()) throw new ApiExceptions.NotFound();
@@ -87,6 +101,7 @@ public class CommunityService {
     @Transactional
     public CommunityDto.Invitation invite(UUID viewer, UUID group, CommunityDto.InviteUser input) {
         requireOwner(viewer, group);
+        requireVipIfRestricted(viewer, group);
         List<UUID> matches = sql.query("SELECT id FROM accounts WHERE handle=:handle",
                 Map.of("handle", input.handle()), (r, i) -> r.getObject(1, UUID.class));
         if (matches.isEmpty()) throw new ApiExceptions.NotFound();
@@ -137,6 +152,7 @@ public class CommunityService {
                 (r, i) -> r.getObject(1, UUID.class));
         if (groups.isEmpty()) throw new ApiExceptions.NotFound();
         UUID group = groups.get(0);
+        requireVipIfRestricted(viewer, group);
         UUID owner = sql.queryForObject("SELECT owner_id FROM chat_groups WHERE id=:id",
                 Map.of("id", group), UUID.class);
         if (owner == null) throw new ApiExceptions.NotFound();
@@ -174,6 +190,7 @@ public class CommunityService {
     @Transactional
     public CommunityDto.Message send(UUID viewer, UUID group, CommunityDto.SendMessage input) {
         requireMember(viewer, group);
+        requireVipIfRestricted(viewer, group);
         String body = input.body().trim();
         if (body.isEmpty()) throw new ApiExceptions.InvalidInput("Mensagem vazia.");
         MapSqlParameterSource args = new MapSqlParameterSource()
@@ -199,6 +216,7 @@ public class CommunityService {
     public CommunityDto.Page<CommunityDto.Message> messages(
             UUID viewer, UUID group, Long before, int limit) {
         requireMember(viewer, group);
+        requireVipIfRestricted(viewer, group);
         if (limit < 1 || limit > 50 || (before != null && before < 1)) {
             throw new ApiExceptions.InvalidInput("Paginação inválida.");
         }
