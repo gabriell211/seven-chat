@@ -133,12 +133,14 @@ public final class RealPagesInstrumentationTest {
                     .perform(scrollTo(), replaceText("Grupo persistido"), closeSoftKeyboard());
             onView(withText("Criar grupo")).perform(scrollTo(), click());
             awaitText("Conversa do grupo");
+            onView(withText(groupName)).perform(scrollTo());
             awaitText(groupName);
 
             onView(withHint("Mensagem para o grupo"))
                     .perform(scrollTo(), replaceText("Mensagem de grupo via interface"),
                             closeSoftKeyboard());
             onView(withText("Enviar ao grupo")).perform(scrollTo(), click());
+            onView(withText("Mensagem de grupo via interface")).perform(scrollTo());
             awaitText("Mensagem de grupo via interface");
             assertTrue(api.call("GET", "/api/v1/groups", null)
                     .getJSONArray("data").toString().contains(groupName));
@@ -149,6 +151,7 @@ public final class RealPagesInstrumentationTest {
             awaitText("Privacidade e dados");
             onView(withText("Revogar comunicações de marketing"))
                     .perform(scrollTo(), click());
+            onView(withText("Marketing desativado.")).perform(scrollTo());
             awaitText("Marketing desativado.");
             assertFalse(api.call("GET", "/api/v1/privacy/consents", null)
                     .getJSONArray("data").getJSONObject(0).getBoolean("granted"));
