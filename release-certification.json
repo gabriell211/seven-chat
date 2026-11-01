@@ -6,31 +6,94 @@
   "required_pages": {
     "feed": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Feed textual carregado do PostgreSQL, com publicações reais",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "explore": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Busca de contas reais e abertura de perfil",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "compose": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Nova publicação textual e preservação de rascunho na rotação",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "chats": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Mensagens privadas de texto e leitura com duas contas",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "notifications": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Lista de eventos reais e confirmação de leitura",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "saved": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Exibição de publicações salvas no servidor",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "profile": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Visualização e edição de nome/biografia persistidos",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "stories": {
       "status": "pending",
@@ -42,7 +105,16 @@
     },
     "groups": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Criação de grupo de texto, convites privados, aceite e mensagens reais; faltam permissões VIP e mídia",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "rooms": {
       "status": "pending",
@@ -70,7 +142,16 @@
     },
     "settings": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "core_verified_not_full_spec",
+        "scope": "Configuração e logout com revogação de sessão",
+        "tests": [
+          "app/src/androidTest/java/com/seven/chat/RealPagesInstrumentationTest.java",
+          "app/src/androidTest/java/com/seven/chat/RealBackendInstrumentationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     }
   },
   "required_integrations": {
@@ -133,11 +214,21 @@
     },
     "moderation-and-abuse": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "api_and_android_reporting_verified",
+        "missing": "Fluxo administrativo completo, sanções, ações auditadas, moderação de mídia e antifraude",
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     },
     "privacy-and-lgpd": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "export_consent_delete_verified",
+        "missing": "Políticas jurídicas, aceite versionado obrigatório, retenção, direitos abrangentes e auditoria externa",
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41332443071"
+      }
     }
   }
 }

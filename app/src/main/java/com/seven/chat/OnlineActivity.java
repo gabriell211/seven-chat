@@ -734,6 +734,15 @@ public final class OnlineActivity extends ComponentActivity {
         });
     }
 
+    private void openGroup(String id) {
+        if (!id.equals(selectedGroupId)) {
+            groupDraft = "";
+            groupMutationId = UUID.randomUUID().toString();
+        }
+        selectedGroupId = id;
+        navigate("group-thread");
+    }
+
     private void groups() {
         heading("Grupos", "Converse apenas com pessoas que aceitaram participar.");
         button("Meus convites", false, () -> navigate("group-invites"));
@@ -744,8 +753,7 @@ public final class OnlineActivity extends ComponentActivity {
                         json("name", name.getText().toString(),
                                 "description", description.getText().toString()),
                         false, created -> {
-                            selectedGroupId = created.getString("id");
-                            navigate("group-thread");
+                            openGroup(created.getString("id"));
                         }));
         request("GET", "/api/v1/groups", null, true, response -> {
             JSONArray data = response.getJSONArray("data");
@@ -755,8 +763,7 @@ public final class OnlineActivity extends ComponentActivity {
                 String group = item.getString("id");
                 button(item.getString("name") + " · " + item.getLong("memberCount") +
                         " participantes", false, () -> {
-                            selectedGroupId = group;
-                            navigate("group-thread");
+                            openGroup(group);
                         });
             }
         });
@@ -776,8 +783,7 @@ public final class OnlineActivity extends ComponentActivity {
                 button("Aceitar convite para " + item.getString("groupName"), true, () ->
                         request("POST", "/api/v1/groups/invitations/" + invitation +
                                 "/accept", null, false, result -> {
-                                    selectedGroupId = result.getString("id");
-                                    navigate("group-thread");
+                                    openGroup(result.getString("id"));
                                 }));
                 button("Recusar convite", false, () ->
                         request("POST", "/api/v1/groups/invitations/" + invitation +
