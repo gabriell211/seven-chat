@@ -138,7 +138,16 @@
     },
     "vip": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "read_only_server_status_and_vip_group_access_verified",
+        "scope": "VIP status read only; expiring/revoked entitlements from PostgreSQL; VIP-only group access enforced server-side",
+        "missing": "Official verified billing/renewal, StoreKit/Play Billing, premium benefits, full UI and real money transaction testing",
+        "tests": [
+          "backend/src/test/java/com/seven/chat/api/VipEntitlementIntegrationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41339583396"
+      }
     },
     "settings": {
       "status": "pending",
@@ -210,7 +219,16 @@
     },
     "purchase-entitlement": {
       "status": "pending",
-      "evidence": []
+      "evidence": [],
+      "partial_verification": {
+        "status": "server_validation_only",
+        "scope": "Migration V5; no user grant endpoint; expiry/revocation authorization checks verified",
+        "missing": "Purchase provider, receipt verification, trusted provisioning, subscription lifecycle and chargebacks",
+        "tests": [
+          "backend/src/test/java/com/seven/chat/api/VipEntitlementIntegrationTest.java"
+        ],
+        "ci_run": "https://github.com/gabriell211/seven-chat/actions/runs/41339583396"
+      }
     },
     "moderation-and-abuse": {
       "status": "pending",
