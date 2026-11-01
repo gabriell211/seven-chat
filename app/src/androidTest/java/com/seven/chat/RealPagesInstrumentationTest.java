@@ -133,12 +133,12 @@ public final class RealPagesInstrumentationTest {
             onView(withText("Criar conta")).perform(click());
             awaitText("Criar conta");
 
-            onView(withHint("E-mail")).perform(replaceText(email), closeSoftKeyboard());
+            onView(withHint("E-mail")).perform(scrollTo(), replaceText(email), closeSoftKeyboard());
             onView(withHint("Usuário: letras minúsculas, números, _"))
-                    .perform(replaceText(handle), closeSoftKeyboard());
+                    .perform(scrollTo(), replaceText(handle), closeSoftKeyboard());
             onView(withHint("Nome de exibição"))
-                    .perform(replaceText("Cadastro real pelo Android"), closeSoftKeyboard());
-            onView(withHint("Senha")).perform(replaceText(password), closeSoftKeyboard());
+                    .perform(scrollTo(), replaceText("Cadastro real pelo Android"), closeSoftKeyboard());
+            onView(withHint("Senha")).perform(scrollTo(), replaceText(password), closeSoftKeyboard());
             onView(withText("Cadastrar")).perform(scrollTo(), click());
 
             awaitText("Publicações reais de usuários cadastrados.");
@@ -152,8 +152,8 @@ public final class RealPagesInstrumentationTest {
             awaitText("Entrar no Seven");
             assertFalse("O logout deve limpar o token local", api.isSignedIn());
 
-            onView(withHint("E-mail")).perform(replaceText(email), closeSoftKeyboard());
-            onView(withHint("Senha")).perform(replaceText(password), closeSoftKeyboard());
+            onView(withHint("E-mail")).perform(scrollTo(), replaceText(email), closeSoftKeyboard());
+            onView(withHint("Senha")).perform(scrollTo(), replaceText(password), closeSoftKeyboard());
             onView(withText("Entrar")).perform(scrollTo(), click());
             awaitText("Publicações reais de usuários cadastrados.");
             assertEquals(handle,
