@@ -212,6 +212,7 @@ public final class OnlineActivity extends ComponentActivity {
             case "comments": comments(); break;
             case "settings": settings(); break;
             case "groups": groups(); break;
+            case "vip": vipStatus(); break;
             case "group-invites": groupInvitations(); break;
             case "group-thread": groupThread(); break;
             case "privacy": privacy(); break;
@@ -755,6 +756,21 @@ public final class OnlineActivity extends ComponentActivity {
                         false, created -> {
                             openGroup(created.getString("id"));
                         }));
+        request("GET", "/api/v1/vip/me", null, false, vip -> {
+            if (vip.optBoolean("active", false)) {
+                button("Criar grupo exclusivo VIP", false, () ->
+                        request("POST", "/api/v1/groups",
+                                new JSONObject(json("name", name.getText().toString(),
+                                        "description", description.getText().toString())) {{
+                                    try { put("vipOnly", true); }
+                                    catch (JSONException ex) { throw new IllegalStateException(ex); }
+                                }}, false, created -> {
+                                    openGroup(created.getString("id"));
+                                }));
+            } else {
+                note("Grupos VIP", "A criação exige um benefício VIP ativo e verificado.");
+            }
+        });
         request("GET", "/api/v1/groups", null, true, response -> {
             JSONArray data = response.getJSONArray("data");
             if (data.length() == 0) note("Nenhum grupo", "Crie um grupo ou aceite um convite.");
@@ -905,6 +921,20 @@ public final class OnlineActivity extends ComponentActivity {
             case "message": return "Enviou uma mensagem.";
             default: return "Nova atividade.";
         }
+    }
+
+    private void vipStatus() {
+        heading("Seven VIP", "Benefícios verificados diretamente no servidor.");
+        request("GET", "/api/v1/vip/me", null, true, response -> {
+            if (response.optBoolean("active", false)) {
+                note("VIP ativo", "Expira em " + response.optString("expiresAt"));
+                button("Meus grupos VIP", true, () -> navigate("groups"));
+            } else {
+                note("VIP inativo", "Esta conta não possui um benefício ativo e verificado. " +
+                        "Nenhuma assinatura ou compra foi simulada.");
+            }
+        });
+        button("Voltar", false, () -> navigate("settings"));
     }
 
     private void capabilityScreen(String pageName) {
