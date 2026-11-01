@@ -19,6 +19,7 @@ import org.junit.runner.RunWith;
 import java.util.UUID;
 
 import static androidx.test.espresso.Espresso.onView;
+import static androidx.test.espresso.Espresso.onData;
 import static androidx.test.espresso.matcher.RootMatchers.isDialog;
 import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
@@ -114,7 +115,8 @@ public final class RealPagesInstrumentationTest {
 
     private void navigate(String item) {
         onView(withText("Menu")).perform(click());
-        onView(withText(item)).inRoot(isDialog()).perform(click());
+        // AlertDialog uses a ListView: onData scrolls to entries not yet laid out.
+        onData(is(item)).inRoot(isDialog()).perform(click());
     }
 
     @Test
