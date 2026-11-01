@@ -13,10 +13,15 @@ public final class CommunityDto {
 
     public record CreateGroup(
             @NotBlank @Size(min = 3, max = 80) String name,
-            @Size(max = 240) String description) {}
+            @Size(max = 240) String description,
+            Boolean vipOnly) {
+        public CreateGroup(String name, String description) {
+            this(name, description, false);
+        }
+    }
 
     public record Group(UUID id, UUID ownerId, String name, String description,
-                        long memberCount, Instant createdAt) {}
+                        long memberCount, Instant createdAt, boolean vipOnly) {}
 
     public record InviteUser(
             @NotBlank @Pattern(regexp = "[a-z0-9_]{3,24}") String handle) {}
