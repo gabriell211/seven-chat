@@ -37,3 +37,14 @@ Os três pipelines terminam com `success`, e Maven/Gradle retornam **zero warnin
 
 ## Garantias de integração
 Tudo na [PR #10](https://github.com/gabriell211/seven-chat/pull/10). Não foi criada PR paralela, nem feita alteração no Neon de produção, nem liberada release. O gate `python3 scripts/release_gate.py` **deve continuar reprovando** até todos os requisitos terem evidência final.
+
+
+## Núcleo VIP verificado separadamente — migração V5
+
+A migração `V5__vip_verified_entitlements.sql` introduz concessões com origem controlada, prazo de expiração e revogação. A aplicação Android pode consultar somente `GET /api/v1/vip/me`; **não existe endpoint público capaz de criar uma assinatura ou ativar o benefício**. Grupos do tipo `vipOnly=true` exigem uma concessão válida para criação, aceite de convite, leitura e envio de mensagens. O proprietário pode excluir o grupo e um participante pode sair mesmo após perder o benefício.
+
+O teste `VipEntitlementIntegrationTest` usa PostgreSQL real e confirma que concessões ausentes, expiradas ou revogadas não concedem acesso; um grupo normal não é bloqueado por isso. A evidência da camada Java é o [run 41339583396](https://github.com/gabriell211/seven-chat/actions/runs/41339583396), com **33 testes aprovados e zero warnings de build**.
+
+O aplicativo também recebeu tela de status VIP e criação condicionada de grupo exclusivo. A homologação completa da interface e dos testes de emulador precisa ser validada na revisão atual. **A certificação de compra/assinatura permanece pendente:** integrar Google Play Billing e App Store, conferir recibos diretamente com as plataformas, lidar com renovação, cancelamento, reembolso e fraude, e somente então provisionar benefícios pela camada confiável. Nenhuma assinatura de produção foi criada ou cobrada.
+
+**Total de certificações permanece em 6/28**. Os itens `vip` e `purchase-entitlement` possuem evidência parcial no manifesto e não podem ser marcados como homologados antes da integração de cobrança real.
