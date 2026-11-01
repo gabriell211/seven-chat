@@ -760,11 +760,9 @@ public final class OnlineActivity extends ComponentActivity {
             if (vip.optBoolean("active", false)) {
                 button("Criar grupo exclusivo VIP", false, () ->
                         request("POST", "/api/v1/groups",
-                                new JSONObject(json("name", name.getText().toString(),
-                                        "description", description.getText().toString())) {{
-                                    try { put("vipOnly", true); }
-                                    catch (JSONException ex) { throw new IllegalStateException(ex); }
-                                }}, false, created -> {
+                                jsonWithBoolean(json("name", name.getText().toString(),
+                                        "description", description.getText().toString()),
+                                        "vipOnly", true), false, created -> {
                                     openGroup(created.getString("id"));
                                 }));
             } else {
@@ -1000,6 +998,15 @@ public final class OnlineActivity extends ComponentActivity {
                                     });
                         }).setNegativeButton("Cancelar", null).show());
         button("Cancelar", false, () -> navigate("feed"));
+    }
+
+    private JSONObject jsonWithBoolean(JSONObject payload, String key, boolean value) {
+        try {
+            payload.put(key, value);
+            return payload;
+        } catch (JSONException ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 
     private JSONObject marketingConsent(boolean enabled) {
