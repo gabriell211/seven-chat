@@ -1,6 +1,9 @@
 package com.seven.chat;
 
-import android.app.Activity;
+import android.net.Uri;
+import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.os.Bundle;
@@ -24,6 +27,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,7 +37,7 @@ import java.util.concurrent.Executors;
  * Server-backed entry point. No fake profiles, feeds, messages, credits or VIP state.
  * Network and database operations never execute on the Android main thread.
  */
-public final class OnlineActivity extends Activity {
+public final class OnlineActivity extends ComponentActivity {
     private SevenApiClient api;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private LinearLayout root;
@@ -45,6 +50,10 @@ public final class OnlineActivity extends Activity {
     private String selectedHandle = "";
     private long selectedPost;
     private String selectedGroupId = "";
+    private String reportTargetType = "";
+    private String reportTargetId = "";
+    private String pendingExport;
+    private ActivityResultLauncher<String> exportDocument;
     private String groupDraft = "";
     private String groupMutationId = UUID.randomUUID().toString();
     private Long cursor;
@@ -61,6 +70,20 @@ public final class OnlineActivity extends Activity {
     @Override
     protected void onCreate(Bundle saved) {
         super.onCreate(saved);
+        exportDocument = registerForActivityResult(
+                new ActivityResultContracts.CreateDocument("application/json"), uri -> {
+                    if (uri == null || pendingExport == null) return;
+                    try (OutputStream stream = getContentResolver().openOutputStream(uri)) {
+                        if (stream == null) throw new IOException("Não foi possível abrir o arquivo.");
+                        stream.write(pendingExport.getBytes(StandardCharsets.UTF_8));
+                        Toast.makeText(this, "Dados exportados", Toast.LENGTH_LONG).show();
+                    } catch (IOException error) {
+                        Toast.makeText(this, "Não foi possível salvar seus dados.",
+                                Toast.LENGTH_LONG).show();
+                    } finally {
+                        pendingExport = null;
+                    }
+                });
         api = new SevenApiClient(this);
         root = UiKit.vertical(this);
         root.setBackgroundColor(UiKit.BACKGROUND);
@@ -76,6 +99,8 @@ public final class OnlineActivity extends Activity {
             selectedHandle = saved.getString("selected_handle", "");
             selectedPost = saved.getLong("selected_post", 0L);
             selectedGroupId = saved.getString("selected_group", "");
+            reportTargetType = saved.getString("report_type", "");
+            reportTargetId = saved.getString("report_id", "");
             groupDraft = saved.getString("group_draft", "");
             groupMutationId = saved.getString("group_mutation", groupMutationId);
             searchQuery = saved.getString("search", "");
@@ -101,6 +126,8 @@ public final class OnlineActivity extends Activity {
         out.putString("selected_handle", selectedHandle);
         out.putLong("selected_post", selectedPost);
         out.putString("selected_group", selectedGroupId);
+        out.putString("report_type", reportTargetType);
+        out.putString("report_id", reportTargetId);
         out.putString("group_draft", groupDraft);
         out.putString("group_mutation", groupMutationId);
         out.putString("search", searchQuery);
@@ -187,6 +214,8 @@ public final class OnlineActivity extends Activity {
             case "groups": groups(); break;
             case "group-invites": groupInvitations(); break;
             case "group-thread": groupThread(); break;
+            case "privacy": privacy(); break;
+            case "report": reportPage(); break;
             default: capabilityScreen(next); break;
         }
 
@@ -436,6 +465,15 @@ public final class OnlineActivity extends Activity {
             navigate("comments");
         });
         card.addView(controls);
+        TextView reportButton = UiKit.text(this, "Denunciar publicação", 13,
+                UiKit.MUTED, true);
+        reportButton.setMinHeight(dp(46));
+        reportButton.setOnClickListener(v -> {
+            reportTargetType = "post";
+            reportTargetId = Long.toString(id);
+            navigate("report");
+        });
+        card.addView(reportButton);
         if (authorId.equals(meId)) {
             TextView edit = UiKit.text(this, "Editar publicação", 13, UiKit.PRIMARY, true);
             edit.setMinHeight(dp(46));
@@ -592,6 +630,11 @@ public final class OnlineActivity extends Activity {
                                         "/api/v1/users/" + selectedId + "/follow",
                                         null, false, result -> navigate("user")));
                         button("Enviar mensagem", false, () -> navigate("thread"));
+                        button("Denunciar usuário", false, () -> {
+                            reportTargetType = "account";
+                            reportTargetId = selectedId;
+                            navigate("report");
+                        });
                         button("Bloquear usuário", false, () -> new AlertDialog.Builder(this)
                                 .setTitle("Bloquear @" + selectedHandle + "?")
                                 .setMessage("Essa pessoa deixará de aparecer no seu feed e não poderá conversar com você.")
@@ -895,11 +938,102 @@ public final class OnlineActivity extends Activity {
         }
     }
 
+    private void reportPage() {
+        heading("Denunciar conteúdo", "Envie uma denúncia real à equipe de moderação.");
+        if (reportTargetType.isEmpty() || reportTargetId.isEmpty()) {
+            note("Recurso indisponível", "Selecione primeiro uma pessoa ou publicação.");
+            return;
+        }
+        EditText explanation = input("Detalhes da denúncia (opcional)", 1000, true);
+        String[] labels = {"Spam", "Assédio", "Ódio", "Violência",
+                "Nudez", "Golpe", "Outro"};
+        String[] values = {"spam", "harassment", "hate", "violence",
+                "nudity", "scam", "other"};
+        button("Selecionar motivo e enviar", true, () ->
+                new AlertDialog.Builder(this).setTitle("Motivo da denúncia")
+                        .setItems(labels, (dialog, which) -> {
+                            JSONObject payload = json("targetType", reportTargetType,
+                                    "targetId", reportTargetId,
+                                    "category", values[which],
+                                    "details", explanation.getText().toString());
+                            request("POST", "/api/v1/moderation/reports", payload,
+                                    false, result -> {
+                                        Toast.makeText(this, "Denúncia registrada",
+                                                Toast.LENGTH_LONG).show();
+                                        navigate("feed");
+                                    });
+                        }).setNegativeButton("Cancelar", null).show());
+        button("Cancelar", false, () -> navigate("feed"));
+    }
+
+    private JSONObject marketingConsent(boolean enabled) {
+        JSONObject payload = json("consentType", "marketing",
+                "documentVersion", "2026.11");
+        try {
+            payload.put("granted", enabled);
+        } catch (JSONException ex) {
+            throw new IllegalStateException(ex);
+        }
+        return payload;
+    }
+
+    private void privacy() {
+        heading("Privacidade e dados",
+                "Gerencie seu consentimento e seus próprios dados no servidor.");
+        button("Exportar meus dados em JSON", false, () ->
+                request("GET", "/api/v1/privacy/export", null,
+                        false, response -> {
+                            pendingExport = response.toString(2);
+                            exportDocument.launch("seven-chat-dados.json");
+                        }));
+        button("Permitir comunicações de marketing", false, () ->
+                request("POST", "/api/v1/privacy/consents",
+                        marketingConsent(true), false,
+                        response -> note("Consentimento", "Marketing autorizado.")));
+        button("Revogar comunicações de marketing", false, () ->
+                request("POST", "/api/v1/privacy/consents",
+                        marketingConsent(false), false,
+                        response -> note("Consentimento", "Marketing desativado.")));
+        request("GET", "/api/v1/privacy/consents", null, true, response -> {
+            JSONArray entries = response.getJSONArray("data");
+            for (int i = 0; i < entries.length(); i++) {
+                JSONObject consent = entries.getJSONObject(i);
+                note(consent.getString("consentType"),
+                        consent.optBoolean("granted") ? "Autorizado" : "Não autorizado");
+            }
+        });
+        button("Excluir minha conta definitivamente", false, this::confirmAccountDeletion);
+        button("Voltar às configurações", false, () -> navigate("settings"));
+    }
+
+    private void confirmAccountDeletion() {
+        EditText password = new EditText(this);
+        password.setHint("Senha atual");
+        password.setInputType(InputType.TYPE_CLASS_TEXT |
+                InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        new AlertDialog.Builder(this)
+                .setTitle("Excluir conta e todos os dados?")
+                .setMessage("Essa operação é irreversível. Seus posts, mensagens, grupos " +
+                        "e sessões serão excluídos. Confirme usando sua senha.")
+                .setView(password)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Excluir definitivamente", (dialog, which) ->
+                        request("POST", "/api/v1/privacy/delete-account",
+                                json("password", password.getText().toString(),
+                                        "confirmation", "DELETE MY ACCOUNT"),
+                                false, result -> {
+                                    api.signOut();
+                                    navigate("login");
+                                }))
+                .show();
+    }
+
     private void settings() {
         heading("Configurações", "Segurança, servidor e sessão.");
         note("Servidor atual", api.baseUrl());
         button("Trocar servidor", false, () -> navigate("server"));
         button("Usuários bloqueados", false, () -> navigate("blocks"));
+        button("Privacidade e dados", false, () -> navigate("privacy"));
         button("Minhas publicações locais anteriores", false,
                 () -> startActivity(new Intent(this, MainActivity.class)));
         note("Dados antigos", "Publicações e fotos do banco local foram preservadas. " +
