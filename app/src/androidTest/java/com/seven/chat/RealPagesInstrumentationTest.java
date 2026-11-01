@@ -120,6 +120,42 @@ public final class RealPagesInstrumentationTest {
     }
 
     @Test
+    public void createRealGroupMessageAndManageMarketingConsentInNativeUi() throws Exception {
+        String groupName = "Grupo UI " + UUID.randomUUID().toString().substring(0, 8);
+        try (ActivityScenario<OnlineActivity> activity =
+                ActivityScenario.launch(OnlineActivity.class)) {
+            awaitText(seedPost);
+            navigate("Grupos");
+            awaitText("Grupos");
+            onView(withHint("Nome do novo grupo"))
+                    .perform(scrollTo(), replaceText(groupName), closeSoftKeyboard());
+            onView(withHint("Descrição do grupo"))
+                    .perform(scrollTo(), replaceText("Grupo persistido"), closeSoftKeyboard());
+            onView(withText("Criar grupo")).perform(scrollTo(), click());
+            awaitText("Conversa do grupo");
+            awaitText(groupName);
+
+            onView(withHint("Mensagem para o grupo"))
+                    .perform(scrollTo(), replaceText("Mensagem de grupo via interface"),
+                            closeSoftKeyboard());
+            onView(withText("Enviar ao grupo")).perform(scrollTo(), click());
+            awaitText("Mensagem de grupo via interface");
+            assertTrue(api.call("GET", "/api/v1/groups", null)
+                    .getJSONArray("data").toString().contains(groupName));
+
+            navigate("Configurações");
+            awaitText("Configurações");
+            onView(withText("Privacidade e dados")).perform(scrollTo(), click());
+            awaitText("Privacidade e dados");
+            onView(withText("Revogar comunicações de marketing"))
+                    .perform(scrollTo(), click());
+            awaitText("Marketing desativado.");
+            assertFalse(api.call("GET", "/api/v1/privacy/consents", null)
+                    .getJSONArray("data").getJSONObject(0).getBoolean("granted"));
+        }
+    }
+
+    @Test
     public void registerLogoutAndLoginUsingRealAndroidFormsAndDatabase() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         String handle = "reg_ui_" + suffix;
