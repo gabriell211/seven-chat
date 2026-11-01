@@ -44,6 +44,9 @@ public final class OnlineActivity extends Activity {
     private String selectedId = "";
     private String selectedHandle = "";
     private long selectedPost;
+    private String selectedGroupId = "";
+    private String groupDraft = "";
+    private String groupMutationId = UUID.randomUUID().toString();
     private Long cursor;
     private String searchQuery = "";
     private String restoreRoute = "feed";
@@ -72,6 +75,9 @@ public final class OnlineActivity extends Activity {
             selectedId = saved.getString("selected_id", "");
             selectedHandle = saved.getString("selected_handle", "");
             selectedPost = saved.getLong("selected_post", 0L);
+            selectedGroupId = saved.getString("selected_group", "");
+            groupDraft = saved.getString("group_draft", "");
+            groupMutationId = saved.getString("group_mutation", groupMutationId);
             searchQuery = saved.getString("search", "");
             draftCaption = saved.getString("draft_caption", "");
             draftMutationId = saved.getString("draft_mutation", draftMutationId);
@@ -94,6 +100,9 @@ public final class OnlineActivity extends Activity {
         out.putString("selected_id", selectedId);
         out.putString("selected_handle", selectedHandle);
         out.putLong("selected_post", selectedPost);
+        out.putString("selected_group", selectedGroupId);
+        out.putString("group_draft", groupDraft);
+        out.putString("group_mutation", groupMutationId);
         out.putString("search", searchQuery);
         out.putString("draft_caption", draftCaption);
         out.putString("draft_mutation", draftMutationId);
@@ -175,6 +184,9 @@ public final class OnlineActivity extends Activity {
             case "notifications": notifications(); break;
             case "comments": comments(); break;
             case "settings": settings(); break;
+            case "groups": groups(); break;
+            case "group-invites": groupInvitations(); break;
+            case "group-thread": groupThread(); break;
             default: capabilityScreen(next); break;
         }
 
@@ -677,6 +689,127 @@ public final class OnlineActivity extends Activity {
                 note("Histórico", "Há mensagens anteriores. A paginação do histórico está disponível na API.");
             }
         });
+    }
+
+    private void groups() {
+        heading("Grupos", "Converse apenas com pessoas que aceitaram participar.");
+        button("Meus convites", false, () -> navigate("group-invites"));
+        EditText name = input("Nome do novo grupo", 80, false);
+        EditText description = input("Descrição do grupo", 240, true);
+        button("Criar grupo", true, () ->
+                request("POST", "/api/v1/groups",
+                        json("name", name.getText().toString(),
+                                "description", description.getText().toString()),
+                        false, created -> {
+                            selectedGroupId = created.getString("id");
+                            navigate("group-thread");
+                        }));
+        request("GET", "/api/v1/groups", null, true, response -> {
+            JSONArray data = response.getJSONArray("data");
+            if (data.length() == 0) note("Nenhum grupo", "Crie um grupo ou aceite um convite.");
+            for (int i = 0; i < data.length(); i++) {
+                JSONObject item = data.getJSONObject(i);
+                String group = item.getString("id");
+                button(item.getString("name") + " · " + item.getLong("memberCount") +
+                        " participantes", false, () -> {
+                            selectedGroupId = group;
+                            navigate("group-thread");
+                        });
+            }
+        });
+    }
+
+    private void groupInvitations() {
+        heading("Convites para grupos", "Você escolhe se deseja entrar.");
+        button("Voltar aos grupos", false, () -> navigate("groups"));
+        request("GET", "/api/v1/groups/invitations", null, true, response -> {
+            JSONArray data = response.getJSONArray("data");
+            if (data.length() == 0) note("Sem convites", "Novos convites aparecerão aqui.");
+            for (int i = 0; i < data.length(); i++) {
+                JSONObject item = data.getJSONObject(i);
+                String invitation = item.getString("id");
+                note(item.getString("groupName"),
+                        "Convite de @" + item.getString("inviterHandle"));
+                button("Aceitar convite para " + item.getString("groupName"), true, () ->
+                        request("POST", "/api/v1/groups/invitations/" + invitation +
+                                "/accept", null, false, result -> {
+                                    selectedGroupId = result.getString("id");
+                                    navigate("group-thread");
+                                }));
+                button("Recusar convite", false, () ->
+                        request("POST", "/api/v1/groups/invitations/" + invitation +
+                                "/decline", null, false, result -> navigate("group-invites")));
+            }
+        });
+    }
+
+    private void groupThread() {
+        if (selectedGroupId.isEmpty()) {
+            navigate("groups");
+            return;
+        }
+        final String groupId = SevenApiClient.segment(selectedGroupId);
+        heading("Conversa do grupo", "Mensagens reais, acessíveis somente aos participantes.");
+        button("Voltar aos grupos", false, () -> navigate("groups"));
+        button("Atualizar mensagens", false, () -> navigate("group-thread"));
+        request("GET", "/api/v1/groups/" + groupId, null, true, group -> {
+            note(group.getString("name"), group.optString("description") + " · " +
+                    group.getLong("memberCount") + " participantes");
+            if (meId.equals(group.getString("ownerId"))) {
+                EditText invitee = input("Convidar @usuário", 24, false);
+                button("Enviar convite", false, () ->
+                        request("POST", "/api/v1/groups/" + groupId + "/invitations",
+                                json("handle", invitee.getText().toString().trim()),
+                                false, invitation -> {
+                                    Toast.makeText(this, "Convite enviado", Toast.LENGTH_SHORT).show();
+                                    navigate("group-thread");
+                                }));
+                button("Excluir grupo", false, () -> new AlertDialog.Builder(this)
+                        .setTitle("Excluir o grupo definitivamente?")
+                        .setMessage("Todas as mensagens e convites desse grupo serão removidos.")
+                        .setNegativeButton("Cancelar", null)
+                        .setPositiveButton("Excluir", (d, w) ->
+                                request("DELETE", "/api/v1/groups/" + groupId, null,
+                                        false, result -> {
+                                            selectedGroupId = "";
+                                            navigate("groups");
+                                        })).show());
+            } else {
+                button("Sair do grupo", false, () -> new AlertDialog.Builder(this)
+                        .setTitle("Sair do grupo?")
+                        .setNegativeButton("Cancelar", null)
+                        .setPositiveButton("Sair", (d, w) ->
+                                request("DELETE", "/api/v1/groups/" + groupId +
+                                        "/membership", null, false, result -> {
+                                            selectedGroupId = "";
+                                            navigate("groups");
+                                        })).show());
+            }
+        });
+        EditText message = input("Mensagem para o grupo", 4000, true);
+        message.setText(groupDraft);
+        onInput(message, value -> groupDraft = value);
+        button("Enviar ao grupo", true, () ->
+                request("POST", "/api/v1/groups/" + groupId + "/messages",
+                        json("clientMutationId", groupMutationId,
+                                "body", message.getText().toString()),
+                        false, result -> {
+                            groupDraft = "";
+                            groupMutationId = UUID.randomUUID().toString();
+                            navigate("group-thread");
+                        }));
+        request("GET", "/api/v1/groups/" + groupId + "/messages?limit=30",
+                null, true, response -> {
+                    JSONArray messages = response.getJSONArray("data");
+                    if (messages.length() == 0) note("Conversa vazia", "Envie uma mensagem.");
+                    for (int i = messages.length() - 1; i >= 0; i--) {
+                        JSONObject item = messages.getJSONObject(i);
+                        note("@" + item.getString("handle"), item.getString("body"));
+                    }
+                    if (!response.isNull("nextCursor")) {
+                        note("Mensagens anteriores", "Histórico disponível com paginação na API.");
+                    }
+                });
     }
 
     private void comments() {
