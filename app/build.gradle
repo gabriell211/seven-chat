@@ -1,22 +1,36 @@
+import groovy.json.JsonOutput
+
 plugins {
     id 'com.android.application'
 }
 
 android {
     namespace 'com.seven.chat'
+    buildFeatures { buildConfig true }
     compileSdk 35
 
     defaultConfig {
         applicationId 'com.seven.chat'
-        minSdk 21
+        minSdk 23
         targetSdk 35
-        versionCode 2
-        versionName '0.2.0-alpha.1'
+        versionCode 3
+        versionName '0.3.0-alpha.1'
+        // Public HTTPS URL only; credentials and database connection details never enter the APK.
+        def suppliedApiUrl = providers.gradleProperty('sevenApiUrl').orElse('').get()
+        if (suppliedApiUrl && !suppliedApiUrl.startsWith('https://')) {
+            throw new GradleException('sevenApiUrl must be HTTPS')
+        }
+        buildConfigField 'String', 'API_BASE_URL', JsonOutput.toJson(suppliedApiUrl)
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     testOptions {
         unitTests.includeAndroidResources = true
+        unitTests.all {
+            // Robolectric downloads Android runtime jars during tests; use stable Maven Central.
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+            systemProperty 'robolectric.dependency.repo.id', 'mavenCentral'
+        }
     }
 
     compileOptions {
@@ -25,7 +39,21 @@ android {
     }
 }
 
+// AndroidX Activity and the legacy test toolchain must resolve one Kotlin runtime.
+configurations.configureEach {
+    resolutionStrategy.force(
+        'org.jetbrains.kotlin:kotlin-stdlib:1.8.22',
+        'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22',
+        'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+    )
+}
+
 dependencies {
+    implementation 'androidx.activity:activity:1.9.3'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
 }

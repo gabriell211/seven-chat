@@ -22,11 +22,20 @@ jobs:
       - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: '8.9'
+      - name: Validate brand and adaptive icons
+        run: python3 scripts/check_brand.py
+      - name: Auditar todas as páginas
+        run: python3 scripts/check_pages.py
       - name: Testar regras locais
         run: |
           set -o pipefail
           gradle --no-daemon --warning-mode all testDebugUnitTest 2>&1 | tee /tmp/seven-gradle-test.log
           python3 scripts/check_ci_warnings.py /tmp/seven-gradle-test.log
+      - name: Compile Android instrumentation tests
+        run: |
+          set -o pipefail
+          gradle --no-daemon --warning-mode all assembleDebugAndroidTest 2>&1 | tee /tmp/seven-android-instrumentation-build.log
+          python3 scripts/check_ci_warnings.py /tmp/seven-android-instrumentation-build.log
       - name: Compilar APK de depuração
         run: |
           set -o pipefail
@@ -37,3 +46,4 @@ jobs:
           name: SevenChat-Android-Debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
