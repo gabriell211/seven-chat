@@ -27,6 +27,14 @@ public final class ApiDto {
     public record ConfirmEmail(
             @NotBlank @Pattern(regexp = "[0-9]{8}") String code) {}
 
+    public record RecoverPasswordRequest(
+            @NotBlank @Email @Size(max = 254) String email) {}
+
+    public record RecoverPasswordConfirm(
+            @NotBlank @Email @Size(max = 254) String email,
+            @NotBlank @Pattern(regexp = "[0-9]{10}") String code,
+            @NotBlank @Size(min = 12, max = 72) String newPassword) {}
+
     public record ChangePassword(
             @NotBlank @Size(max = 72) String currentPassword,
             @NotBlank @Size(min = 12, max = 72) String newPassword) {}

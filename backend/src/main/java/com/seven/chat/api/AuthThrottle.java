@@ -65,6 +65,17 @@ public class AuthThrottle {
         check("email-verification-account", accountId, 3, 60);
     }
 
+    public void passwordRecoveryRequestAttempt(String email, String remoteAddress) {
+        // Both buckets apply even when the email does not correspond to an account.
+        check("recovery-request-ip", remoteAddress, 60, 60);
+        check("recovery-request-email", email.trim().toLowerCase(Locale.ROOT), 4, 60);
+    }
+
+    public void passwordRecoveryConfirmAttempt(String email, String remoteAddress) {
+        check("recovery-confirm-ip", remoteAddress, 120, 15);
+        check("recovery-confirm-email", email.trim().toLowerCase(Locale.ROOT), 12, 15);
+    }
+
     public void passwordChangeAttempt(String accountId) {
         check("change-password-account", accountId, 8, 15);
     }

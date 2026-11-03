@@ -298,4 +298,30 @@ public final class RealBackendInstrumentationTest {
         assertFalse(api.call("GET", "/api/v1/auth/email-verification", null)
                 .getBoolean("verified"));
     }
+
+    @Test
+    public void recoveryRequiresRealSmtpAndNeverIssuesAnonymousSession() throws Exception {
+        String handle = "recover_" + UUID.randomUUID().toString().substring(0, 8);
+        api.signOut();
+        String email = handle + "@seven.test";
+
+        try {
+            api.call("POST", "/api/v1/auth/recovery/request",
+                    new JSONObject().put("email", email));
+            fail("Sem SMTP e segredo configurados, a API não pode alegar entrega.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(503, expected.status);
+        }
+
+        try {
+            api.call("POST", "/api/v1/auth/recovery/confirm",
+                    new JSONObject().put("email", email)
+                            .put("code", "0000000000")
+                            .put("newPassword", "nova-senha-segura-2026"));
+            fail("Código não emitido não pode ser aceito.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(422, expected.status);
+        }
+        assertFalse(api.isSignedIn());
+    }
 }

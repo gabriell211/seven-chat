@@ -59,9 +59,15 @@ jobs:
           DB_PASSWORD: seven_ci_only
         run: |
           set -euo pipefail
-          nohup mvn -B -ntp -f backend/pom.xml \
-            -Dspring-boot.run.profiles=test spring-boot:run \
+          # Do not keep Maven alive alongside Gradle, the JVM and Android emulator.
+          mvn -B -ntp -f backend/pom.xml -DskipTests package \
+            > /tmp/seven-api-package.log 2>&1
+          python3 scripts/check_ci_warnings.py /tmp/seven-api-package.log
+          nohup java -Xms96m -Xmx384m -XX:MaxMetaspaceSize=192m \
+            -jar backend/target/seven-chat-api-0.1.0-SNAPSHOT.jar \
+            --spring.profiles.active=test \
             > /tmp/seven-api-local.log 2>&1 < /dev/null &
+          echo $! > /tmp/seven-api-local.pid
           for i in $(seq 1 120); do
             if curl -fsS --max-time 2 http://127.0.0.1:8080/api/v1/health >/dev/null; then
               echo "Local API + PostgreSQL healthy"
@@ -104,6 +110,14 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 600
           script: |
+            # The emulator can lock before the UI suite after API-only tests.
+            adb shell svc power stayon true
+            adb shell input keyevent KEYCODE_WAKEUP
+            adb shell wm dismiss-keyguard
+            adb shell input keyevent 82
+            adb shell settings put system screen_off_timeout 2147483647
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp|mDreamingLockscreen' || true
+            bash -euo pipefail -c 'curl -fsS --max-time 4 http://127.0.0.1:8080/api/v1/health >/dev/null || { echo "::error::Local API offline before Android tests"; tail -n 80 /tmp/seven-api-local.log; exit 1; }'
             bash -euo pipefail -c 'gradle --no-daemon --warning-mode all connectedDebugAndroidTest 2>&1 | tee /tmp/seven-android-e2e.log'
             python3 scripts/check_ci_warnings.py /tmp/seven-android-e2e.log
 
@@ -120,6 +134,7 @@ jobs:
             app/build/outputs/androidTest-results/connected/
             app/build/reports/androidTests/connected/
             /tmp/seven-api-local.log
+            /tmp/seven-api-package.log
           if-no-files-found: error
 
 # This workflow is NOT an approval for all features, voice rooms, livestreams
