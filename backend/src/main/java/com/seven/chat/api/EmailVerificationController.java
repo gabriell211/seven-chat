@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth/email-verification")
-public final class EmailVerificationController {
+public class EmailVerificationController {
     private final EmailVerificationService service;
     private final AuthThrottle throttle;
 

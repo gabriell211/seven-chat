@@ -10,7 +10,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public final class EmailVerificationRepository {
+public class EmailVerificationRepository {
     private final NamedParameterJdbcTemplate sql;
 
     public record EmailAccount(String email, boolean verified) {}
