@@ -213,6 +213,7 @@ public final class OnlineActivity extends ComponentActivity {
             case "settings": settings(); break;
             case "password": changePassword(); break;
             case "verify-email": verifyEmail(); break;
+            case "recovery": passwordRecovery(); break;
             case "groups": groups(); break;
             case "vip": vipStatus(); break;
             case "group-invites": groupInvitations(); break;
@@ -400,6 +401,9 @@ public final class OnlineActivity extends ComponentActivity {
                         navigate("feed");
                     });
         });
+        if (!create) {
+            button("Esqueci minha senha", false, () -> navigate("recovery"));
+        }
         button(create ? "Já tenho uma conta" : "Criar conta", false,
                 () -> navigate(create ? "login" : "register"));
         button("Configurar servidor", false, () -> navigate("server"));
@@ -1071,6 +1075,50 @@ public final class OnlineActivity extends ComponentActivity {
                                     navigate("login");
                                 }))
                 .show();
+    }
+
+    private void passwordRecovery() {
+        heading("Recuperar acesso",
+                "Solicite um código de 10 dígitos. Para proteger sua privacidade, "
+                + "a resposta não informa se o e-mail possui uma conta.");
+        EditText email = input("E-mail da conta", 254, false);
+        button("Enviar código de recuperação", true, () ->
+                request("POST", "/api/v1/auth/recovery/request",
+                        json("email", email.getText().toString()), false, response ->
+                                note("Solicitação recebida",
+                                        "Se a conta tiver um e-mail verificado, "
+                                        + "você receberá o código. Confira também o spam.")));
+
+        EditText code = input("Código de 10 dígitos", 10, false);
+        code.setInputType(InputType.TYPE_CLASS_NUMBER);
+        EditText password = input("Nova senha", 72, false);
+        EditText confirmation = input("Confirmar nova senha", 72, false);
+        int passwordType = InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_PASSWORD;
+        password.setInputType(passwordType);
+        confirmation.setInputType(passwordType);
+        button("Redefinir senha", true, () -> {
+            String replacement = password.getText().toString();
+            if (!replacement.equals(confirmation.getText().toString())) {
+                displayError("A confirmação não corresponde à nova senha.");
+                return;
+            }
+            request("POST", "/api/v1/auth/recovery/confirm",
+                    json("email", email.getText().toString(),
+                            "code", code.getText().toString(),
+                            "newPassword", replacement),
+                    false, response -> {
+                        code.setText("");
+                        password.setText("");
+                        confirmation.setText("");
+                        api.signOut();
+                        navigate("login");
+                        Toast.makeText(this,
+                                "Senha alterada. Entre com sua nova senha.",
+                                Toast.LENGTH_LONG).show();
+                    });
+        });
+        button("Voltar ao login", false, () -> navigate("login"));
     }
 
     private void verifyEmail() {

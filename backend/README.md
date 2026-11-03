@@ -114,3 +114,22 @@ isso não certifica entrega em caixas externas. O recurso fica acessível em
 Configurações > Verificar meu e-mail. Para preservar as contas e aplicativos
 existentes, login e funcionalidades ainda não são condicionados ao estado
 `email_verified_at`; o rollout obrigatório requer plano separado.
+
+## Recuperação segura de senha
+
+A migração Flyway V7 cria a tabela `password_recovery_codes`, armazenando
+apenas digest HMAC-SHA256, expiração e tentativas, nunca o código em texto puro.
+
+- `POST /api/v1/auth/recovery/request` (público): `{"email":"pessoa@example.com"}`;
+  retorna 202 sem revelar se a conta existe ou se o e-mail está verificado.
+- `POST /api/v1/auth/recovery/confirm` (público): e-mail, código numérico de
+  **10 dígitos** e `newPassword` (12 a 72 bytes UTF-8); retorna 204 e
+  invalida todas as sessões antigas após a redefinição.
+- O código dura 15 minutos, pode ser usado uma única vez, tolera no máximo
+  5 tentativas erradas; rate limit de envio por endereço e e-mail.
+- Por segurança, **somente contas com `email_verified_at` preenchido**
+  podem receber um código. Contas antigas não verificadas devem confirmar
+  primeiro o endereço por fluxo autenticado (já existente).
+- Sem SMTP real configurado, o envio retorna 503 `EMAIL_UNAVAILABLE`;
+  não existe envio simulado no app. O CI valida a troca via SMTP isolado
+  e PostgreSQL, não a entrega em provedores externos.
