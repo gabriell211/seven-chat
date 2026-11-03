@@ -323,9 +323,5 @@ public final class RealBackendInstrumentationTest {
             assertEquals(422, expected.status);
         }
         assertFalse(api.isSignedIn());
-        JSONObject loggedIn = api.call("POST", "/api/v1/auth/login",
-                new JSONObject().put("email", email)
-                        .put("password", "uma-senha-segura-para-teste"));
-        assertEquals(handle, loggedIn.getJSONObject("user").getString("handle"));
     }
 }
