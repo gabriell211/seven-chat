@@ -33,7 +33,8 @@ public class AccountStore {
 
     public Optional<StoredAccount> byEmail(String email) {
         List<StoredAccount> matches = jdbc.query(
-                "SELECT id, email, handle, display_name, password_hash FROM accounts WHERE email=:email",
+                // Serialize login and credential changes, preventing stale-password session issuance.
+                "SELECT id, email, handle, display_name, password_hash FROM accounts WHERE email=:email FOR UPDATE",
                 java.util.Map.of("email", email), this::map);
         return matches.stream().findFirst();
     }
