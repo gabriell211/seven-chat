@@ -23,7 +23,7 @@ public final class ApiDto {
             @NotBlank @Size(max = 72) String password) {}
 
     public record ChangePassword(
-            @NotBlank String currentPassword,
+            @NotBlank @Size(max = 72) String currentPassword,
             @NotBlank @Size(min = 12, max = 72) String newPassword) {}
 
     public record Account(UUID id, String handle, String displayName) {}
