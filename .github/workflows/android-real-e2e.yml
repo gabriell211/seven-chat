@@ -110,6 +110,13 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 600
           script: |
+            # The emulator can lock before the UI suite after API-only tests.
+            adb shell svc power stayon true
+            adb shell input keyevent KEYCODE_WAKEUP
+            adb shell wm dismiss-keyguard
+            adb shell input keyevent 82
+            adb shell settings put system screen_off_timeout 2147483647
+            adb shell dumpsys window | grep -E 'mCurrentFocus|mFocusedApp|mDreamingLockscreen' || true
             bash -euo pipefail -c 'curl -fsS --max-time 4 http://127.0.0.1:8080/api/v1/health >/dev/null || { echo "::error::Local API offline before Android tests"; tail -n 80 /tmp/seven-api-local.log; exit 1; }'
             bash -euo pipefail -c 'gradle --no-daemon --warning-mode all connectedDebugAndroidTest 2>&1 | tee /tmp/seven-android-e2e.log'
             python3 scripts/check_ci_warnings.py /tmp/seven-android-e2e.log
