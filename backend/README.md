@@ -133,3 +133,12 @@ apenas digest HMAC-SHA256, expiração e tentativas, nunca o código em texto pu
 - Sem SMTP real configurado, o envio retorna 503 `EMAIL_UNAVAILABLE`;
   não existe envio simulado no app. O CI valida a troca via SMTP isolado
   e PostgreSQL, não a entrega em provedores externos.
+
+## Homologação Android com API real
+
+O workflow `android-real-e2e.yml` compila primeiro um JAR executável da
+API Spring Boot e encerra o Maven antes de iniciar o emulador Android.
+O serviço de testes roda com heap limitado (`-Xmx384m`) para evitar
+disputa de memória com Gradle e o Android Emulator no runner.
+É validada a saúde HTTP+PostgreSQL antes da execução instrumentada.
+O backend de produção **não** recebe esse limite por essa configuração de CI.
