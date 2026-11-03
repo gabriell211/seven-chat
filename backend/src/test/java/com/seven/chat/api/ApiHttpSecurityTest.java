@@ -110,20 +110,20 @@ class ApiHttpSecurityTest {
         String handle = "rotation_" + UUID.randomUUID().toString().substring(0, 8);
         String oldPassword = "senha-antiga-segura-2026";
         String newPassword = "senha-nova-segura-2026";
+        String body = "{\"currentPassword\":\"%s\",\"newPassword\":\"%s\"}";
         String first = auth.register(new ApiDto.Register(
                 email, handle, "Teste de segurança", oldPassword)).accessToken();
         String second = auth.login(new ApiDto.Login(email, oldPassword)).accessToken();
 
-        mvc.perform(post("/api/v1/auth/password").contentType(MediaType.APPLICATION_JSON)
-                .content("{\\"currentPassword\\":\\"x\\",\\"newPassword\\":\\""
-                        + newPassword + "\\"}"))
+        mvc.perform(post("/api/v1/auth/password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body.formatted(oldPassword, newPassword)))
                 .andExpect(status().isUnauthorized());
 
         mvc.perform(post("/api/v1/auth/password")
                 .header("Authorization", "Bearer " + first)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\\"currentPassword\\":\\"senha-incorreta\\","
-                        + "\\"newPassword\\":\\"" + newPassword + "\\"}"))
+                .content(body.formatted("senha-incorreta", newPassword)))
                 .andExpect(status().isUnprocessableContent());
 
         mvc.perform(get("/api/v1/auth/me")
@@ -133,23 +133,19 @@ class ApiHttpSecurityTest {
         mvc.perform(post("/api/v1/auth/password")
                 .header("Authorization", "Bearer " + first)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\\"currentPassword\\":\\"" + oldPassword + "\\","
-                        + "\\"newPassword\\":\\"" + oldPassword + "\\"}"))
+                .content(body.formatted(oldPassword, oldPassword)))
                 .andExpect(status().isUnprocessableContent());
 
         mvc.perform(post("/api/v1/auth/password")
                 .header("Authorization", "Bearer " + first)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\\"currentPassword\\":\\"" + oldPassword + "\\","
-                        + "\\"newPassword\\":\\"á\\"
-                        + "á".repeat(40) + "\\"}"))
+                .content(body.formatted(oldPassword, "á".repeat(40))))
                 .andExpect(status().isUnprocessableContent());
 
         mvc.perform(post("/api/v1/auth/password")
                 .header("Authorization", "Bearer " + first)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\\"currentPassword\\":\\"" + oldPassword + "\\","
-                        + "\\"newPassword\\":\\"" + newPassword + "\\"}"))
+                .content(body.formatted(oldPassword, newPassword)))
                 .andExpect(status().isNoContent())
                 .andExpect(header().string("Cache-Control",
                         org.hamcrest.Matchers.containsString("no-store")));
