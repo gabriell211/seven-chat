@@ -235,4 +235,46 @@ public final class RealBackendInstrumentationTest {
             assertEquals(401, expected.status);
         }
     }
+
+    @Test
+    public void passwordRotationRevokesAllDeviceTokensUsingRealApi() throws Exception {
+        String handle = "pw_" + UUID.randomUUID().toString().substring(0, 8);
+        String email = handle + "@seven.test";
+        String oldPassword = "uma-senha-segura-para-teste";
+        String newPassword = "nova-senha-de-homologacao-2026";
+        JSONObject created = register(handle);
+        String first = created.getString("accessToken");
+        String second = api.call("POST", "/api/v1/auth/login", new JSONObject()
+                .put("email", email).put("password", oldPassword))
+                .getString("accessToken");
+        api.signIn(first);
+        try {
+            api.call("POST", "/api/v1/auth/password", new JSONObject()
+                    .put("currentPassword", "senha-incorreta")
+                    .put("newPassword", newPassword));
+            fail("Senha atual inválida não pode alterar a conta.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(422, expected.status);
+        }
+        assertEquals(handle, api.call("GET", "/api/v1/auth/me", null)
+                .getString("handle"));
+        api.call("POST", "/api/v1/auth/password", new JSONObject()
+                .put("currentPassword", oldPassword)
+                .put("newPassword", newPassword));
+
+        for (String revoked : new String[]{first, second}) {
+            api.signIn(revoked);
+            try {
+                api.call("GET", "/api/v1/auth/me", null);
+                fail("Sessões anteriores à troca devem ser invalidadas.");
+            } catch (SevenApiClient.ApiError expected) {
+                assertEquals(401, expected.status);
+            }
+        }
+        JSONObject newLogin = api.call("POST", "/api/v1/auth/login", new JSONObject()
+                .put("email", email).put("password", newPassword));
+        api.signIn(newLogin.getString("accessToken"));
+        assertEquals(handle, api.call("GET", "/api/v1/auth/me", null)
+                .getString("handle"));
+    }
 }

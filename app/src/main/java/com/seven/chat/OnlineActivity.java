@@ -211,6 +211,7 @@ public final class OnlineActivity extends ComponentActivity {
             case "notifications": notifications(); break;
             case "comments": comments(); break;
             case "settings": settings(); break;
+            case "password": changePassword(); break;
             case "groups": groups(); break;
             case "vip": vipStatus(); break;
             case "group-invites": groupInvitations(); break;
@@ -1071,12 +1072,47 @@ public final class OnlineActivity extends ComponentActivity {
                 .show();
     }
 
+    private void changePassword() {
+        heading("Alterar senha",
+                "Informe sua senha atual. Depois da alteração, todos os aparelhos "
+                + "precisarão entrar novamente.");
+        EditText current = input("Senha atual", 72, false);
+        EditText replacement = input("Nova senha (mínimo de 12 caracteres)", 72, false);
+        EditText confirm = input("Confirmar nova senha", 72, false);
+        int passwordType = InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_VARIATION_PASSWORD;
+        current.setInputType(passwordType);
+        replacement.setInputType(passwordType);
+        confirm.setInputType(passwordType);
+        button("Salvar nova senha", true, () -> {
+            String value = replacement.getText().toString();
+            if (!value.equals(confirm.getText().toString())) {
+                displayError("A confirmação não corresponde à nova senha.");
+                return;
+            }
+            request("POST", "/api/v1/auth/password",
+                    json("currentPassword", current.getText().toString(),
+                            "newPassword", value), false, result -> {
+                        current.setText("");
+                        replacement.setText("");
+                        confirm.setText("");
+                        api.signOut();
+                        navigate("login");
+                        Toast.makeText(this,
+                                "Senha alterada. Entre novamente em sua conta.",
+                                Toast.LENGTH_LONG).show();
+                    });
+        });
+        button("Voltar às configurações", false, () -> navigate("settings"));
+    }
+
     private void settings() {
         heading("Configurações", "Segurança, servidor e sessão.");
         note("Servidor atual", api.baseUrl());
         button("Trocar servidor", false, () -> navigate("server"));
         button("Usuários bloqueados", false, () -> navigate("blocks"));
         button("Privacidade e dados", false, () -> navigate("privacy"));
+        button("Alterar senha", false, () -> navigate("password"));
         button("Minhas publicações locais anteriores", false,
                 () -> startActivity(new Intent(this, MainActivity.class)));
         note("Dados antigos", "Publicações e fotos do banco local foram preservadas. " +

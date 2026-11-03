@@ -70,6 +70,27 @@ public class AuthService {
     }
 
     @Transactional
+    public void changePassword(UUID accountId, ApiDto.ChangePassword input) {
+        // Lock the account to serialize concurrent password rotations.
+        AccountStore.StoredAccount account = accounts.byIdForUpdate(accountId)
+                .orElseThrow(ApiExceptions.Unauthorized::new);
+        if (!passwords.matches(input.currentPassword(), account.passwordHash())) {
+            throw new ApiExceptions.InvalidInput("Senha atual incorreta.");
+        }
+        int newPasswordBytes = input.newPassword()
+                .getBytes(StandardCharsets.UTF_8).length;
+        if (input.newPassword().isBlank() || newPasswordBytes < 12 ||
+                newPasswordBytes > 72) {
+            throw new ApiExceptions.InvalidInput("A nova senha deve ter de 12 a 72 bytes.");
+        }
+        if (passwords.matches(input.newPassword(), account.passwordHash())) {
+            throw new ApiExceptions.InvalidInput("A nova senha precisa ser diferente da atual.");
+        }
+        accounts.replacePasswordAndRevokeSessions(
+                accountId, passwords.encode(input.newPassword()));
+    }
+
+    @Transactional
     public void logout(String rawToken) {
         accounts.revokeSession(hash(rawToken));
     }

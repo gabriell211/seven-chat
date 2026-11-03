@@ -22,6 +22,10 @@ public final class ApiDto {
             @NotBlank @Email @Size(max = 254) String email,
             @NotBlank @Size(max = 72) String password) {}
 
+    public record ChangePassword(
+            @NotBlank @Size(max = 72) String currentPassword,
+            @NotBlank @Size(min = 12, max = 72) String newPassword) {}
+
     public record Account(UUID id, String handle, String displayName) {}
 
     public record Session(String accessToken, String tokenType, Instant expiresAt, Account user) {}

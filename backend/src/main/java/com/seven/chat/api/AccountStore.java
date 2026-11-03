@@ -33,7 +33,8 @@ public class AccountStore {
 
     public Optional<StoredAccount> byEmail(String email) {
         List<StoredAccount> matches = jdbc.query(
-                "SELECT id, email, handle, display_name, password_hash FROM accounts WHERE email=:email",
+                // Serialize login and credential changes, preventing stale-password session issuance.
+                "SELECT id, email, handle, display_name, password_hash FROM accounts WHERE email=:email FOR UPDATE",
                 java.util.Map.of("email", email), this::map);
         return matches.stream().findFirst();
     }
@@ -43,6 +44,21 @@ public class AccountStore {
                 "SELECT id, email, handle, display_name, password_hash FROM accounts WHERE id=:id",
                 java.util.Map.of("id", id), this::map);
         return matches.stream().findFirst();
+    }
+
+    public Optional<StoredAccount> byIdForUpdate(UUID id) {
+        List<StoredAccount> matches = jdbc.query(
+                "SELECT id, email, handle, display_name, password_hash " +
+                "FROM accounts WHERE id=:id FOR UPDATE",
+                java.util.Map.of("id", id), this::map);
+        return matches.stream().findFirst();
+    }
+
+    public void replacePasswordAndRevokeSessions(UUID id, String passwordHash) {
+        jdbc.update("UPDATE accounts SET password_hash=:hash WHERE id=:id",
+                java.util.Map.of("id", id, "hash", passwordHash));
+        jdbc.update("DELETE FROM auth_sessions WHERE account_id=:id",
+                java.util.Map.of("id", id));
     }
 
     public StoredAccount create(ApiDto.Register input, String passwordHash) {
