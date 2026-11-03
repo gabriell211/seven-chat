@@ -45,6 +45,21 @@ public class AccountStore {
         return matches.stream().findFirst();
     }
 
+    public Optional<StoredAccount> byIdForUpdate(UUID id) {
+        List<StoredAccount> matches = jdbc.query(
+                "SELECT id, email, handle, display_name, password_hash " +
+                "FROM accounts WHERE id=:id FOR UPDATE",
+                java.util.Map.of("id", id), this::map);
+        return matches.stream().findFirst();
+    }
+
+    public void replacePasswordAndRevokeSessions(UUID id, String passwordHash) {
+        jdbc.update("UPDATE accounts SET password_hash=:hash WHERE id=:id",
+                java.util.Map.of("id", id, "hash", passwordHash));
+        jdbc.update("DELETE FROM auth_sessions WHERE account_id=:id",
+                java.util.Map.of("id", id));
+    }
+
     public StoredAccount create(ApiDto.Register input, String passwordHash) {
         UUID id = UUID.randomUUID();
         String email = input.email().trim().toLowerCase(Locale.ROOT);

@@ -102,4 +102,71 @@ class ApiHttpSecurityTest {
                         """))
                 .andExpect(status().isUnprocessableContent());
     }
+
+    @Test
+    void passwordRotationRequiresCurrentPasswordAndRevokesEverySession() throws Exception {
+        String email = "rotation_" + UUID.randomUUID().toString().substring(0, 8)
+                + "@seven.test";
+        String handle = "rotation_" + UUID.randomUUID().toString().substring(0, 8);
+        String oldPassword = "senha-antiga-segura-2026";
+        String newPassword = "senha-nova-segura-2026";
+        String first = auth.register(new ApiDto.Register(
+                email, handle, "Teste de segurança", oldPassword)).accessToken();
+        String second = auth.login(new ApiDto.Login(email, oldPassword)).accessToken();
+
+        mvc.perform(post("/api/v1/auth/password").contentType(MediaType.APPLICATION_JSON)
+                .content("{\\"currentPassword\\":\\"x\\",\\"newPassword\\":\\""
+                        + newPassword + "\\"}"))
+                .andExpect(status().isUnauthorized());
+
+        mvc.perform(post("/api/v1/auth/password")
+                .header("Authorization", "Bearer " + first)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\\"currentPassword\\":\\"senha-incorreta\\","
+                        + "\\"newPassword\\":\\"" + newPassword + "\\"}"))
+                .andExpect(status().isUnprocessableContent());
+
+        mvc.perform(get("/api/v1/auth/me")
+                .header("Authorization", "Bearer " + second))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/api/v1/auth/password")
+                .header("Authorization", "Bearer " + first)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\\"currentPassword\\":\\"" + oldPassword + "\\","
+                        + "\\"newPassword\\":\\"" + oldPassword + "\\"}"))
+                .andExpect(status().isUnprocessableContent());
+
+        mvc.perform(post("/api/v1/auth/password")
+                .header("Authorization", "Bearer " + first)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\\"currentPassword\\":\\"" + oldPassword + "\\","
+                        + "\\"newPassword\\":\\"á\\"
+                        + "á".repeat(40) + "\\"}"))
+                .andExpect(status().isUnprocessableContent());
+
+        mvc.perform(post("/api/v1/auth/password")
+                .header("Authorization", "Bearer " + first)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\\"currentPassword\\":\\"" + oldPassword + "\\","
+                        + "\\"newPassword\\":\\"" + newPassword + "\\"}"))
+                .andExpect(status().isNoContent())
+                .andExpect(header().string("Cache-Control",
+                        org.hamcrest.Matchers.containsString("no-store")));
+
+        mvc.perform(get("/api/v1/auth/me")
+                .header("Authorization", "Bearer " + first))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/auth/me")
+                .header("Authorization", "Bearer " + second))
+                .andExpect(status().isUnauthorized());
+
+        org.junit.jupiter.api.Assertions.assertThrows(ApiExceptions.Unauthorized.class,
+                () -> auth.login(new ApiDto.Login(email, oldPassword)));
+        String renewed = auth.login(new ApiDto.Login(email, newPassword)).accessToken();
+        mvc.perform(get("/api/v1/auth/me")
+                .header("Authorization", "Bearer " + renewed))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.handle").value(handle));
+    }
 }

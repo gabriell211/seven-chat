@@ -61,6 +61,15 @@ public class AuthThrottle {
         check("login-account", email.trim().toLowerCase(Locale.ROOT), 8, 15);
     }
 
+    public void passwordChangeAttempt(String accountId) {
+        check("change-password-account", accountId, 8, 15);
+    }
+
+    public void clearSuccessfulPasswordChange(String accountId) {
+        jdbc.update("DELETE FROM auth_throttles WHERE scope_key=:key",
+                Map.of("key", hash("change-password-account:" + accountId)));
+    }
+
     public void registrationAttempt(String remoteAddress) {
         check("register-address", remoteAddress, 15, 60);
     }

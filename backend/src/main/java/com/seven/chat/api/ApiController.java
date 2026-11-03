@@ -55,6 +55,17 @@ public class ApiController {
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(session);
     }
 
+    @PostMapping("/auth/password")
+    public ResponseEntity<Void> changePassword(Authentication principal,
+            @Valid @RequestBody ApiDto.ChangePassword input) {
+        UUID accountId = UUID.fromString(principal.getName());
+        throttle.passwordChangeAttempt(accountId.toString());
+        auth.changePassword(accountId, input);
+        throttle.clearSuccessfulPasswordChange(accountId.toString());
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore()).build();
+    }
+
     @GetMapping("/auth/me")
     public ApiDto.Account me(Authentication principal) {
         return auth.me(UUID.fromString(principal.getName()));
