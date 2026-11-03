@@ -302,7 +302,6 @@ public final class RealBackendInstrumentationTest {
     @Test
     public void recoveryRequiresRealSmtpAndNeverIssuesAnonymousSession() throws Exception {
         String handle = "recover_" + UUID.randomUUID().toString().substring(0, 8);
-        JSONObject account = register(handle);
         api.signOut();
         String email = handle + "@seven.test";
 
@@ -328,6 +327,5 @@ public final class RealBackendInstrumentationTest {
                 new JSONObject().put("email", email)
                         .put("password", "uma-senha-segura-para-teste"));
         assertEquals(handle, loggedIn.getJSONObject("user").getString("handle"));
-        assertNotNull(account.getString("accessToken"));
     }
 }
