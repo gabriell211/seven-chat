@@ -22,6 +22,11 @@ public final class ApiDto {
             @NotBlank @Email @Size(max = 254) String email,
             @NotBlank @Size(max = 72) String password) {}
 
+    public record EmailStatus(String maskedEmail, boolean verified) {}
+
+    public record ConfirmEmail(
+            @NotBlank @Pattern(regexp = "[0-9]{8}") String code) {}
+
     public record ChangePassword(
             @NotBlank @Size(max = 72) String currentPassword,
             @NotBlank @Size(min = 12, max = 72) String newPassword) {}

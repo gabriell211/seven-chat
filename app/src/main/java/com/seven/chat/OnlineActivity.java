@@ -212,6 +212,7 @@ public final class OnlineActivity extends ComponentActivity {
             case "comments": comments(); break;
             case "settings": settings(); break;
             case "password": changePassword(); break;
+            case "verify-email": verifyEmail(); break;
             case "groups": groups(); break;
             case "vip": vipStatus(); break;
             case "group-invites": groupInvitations(); break;
@@ -1072,6 +1073,35 @@ public final class OnlineActivity extends ComponentActivity {
                 .show();
     }
 
+    private void verifyEmail() {
+        heading("Verificar e-mail",
+                "Use o código de 8 dígitos recebido na sua caixa de entrada.");
+        request("GET", "/api/v1/auth/email-verification", null, true, response -> {
+            boolean verified = response.getBoolean("verified");
+            note(verified ? "E-mail verificado" : "Verificação pendente",
+                    response.getString("maskedEmail"));
+            if (!verified) {
+                button("Enviar código por e-mail", true, () ->
+                        request("POST", "/api/v1/auth/email-verification/send",
+                                null, false, ignored ->
+                                        note("Código solicitado",
+                                                "Confira sua caixa de entrada e o spam.")));
+                EditText code = input("Código de 8 dígitos", 8, false);
+                code.setInputType(InputType.TYPE_CLASS_NUMBER);
+                button("Confirmar código", true, () ->
+                        request("POST", "/api/v1/auth/email-verification/confirm",
+                                json("code", code.getText().toString()), false, result -> {
+                                    if (result.getBoolean("verified")) {
+                                        Toast.makeText(this, "E-mail verificado",
+                                                Toast.LENGTH_LONG).show();
+                                        navigate("verify-email");
+                                    }
+                                }));
+            }
+            button("Voltar às configurações", false, () -> navigate("settings"));
+        });
+    }
+
     private void changePassword() {
         heading("Alterar senha",
                 "Informe sua senha atual. Depois da alteração, todos os aparelhos "
@@ -1113,6 +1143,7 @@ public final class OnlineActivity extends ComponentActivity {
         button("Usuários bloqueados", false, () -> navigate("blocks"));
         button("Privacidade e dados", false, () -> navigate("privacy"));
         button("Alterar senha", false, () -> navigate("password"));
+        button("Verificar meu e-mail", false, () -> navigate("verify-email"));
         button("Minhas publicações locais anteriores", false,
                 () -> startActivity(new Intent(this, MainActivity.class)));
         note("Dados antigos", "Publicações e fotos do banco local foram preservadas. " +
