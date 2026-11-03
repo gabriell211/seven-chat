@@ -277,4 +277,25 @@ public final class RealBackendInstrumentationTest {
         assertEquals(handle, api.call("GET", "/api/v1/auth/me", null)
                 .getString("handle"));
     }
+
+    @Test
+    public void emailVerificationIsPrivateAndDoesNotInventSmtpDelivery() throws Exception {
+        String handle = "email_" + UUID.randomUUID().toString().substring(0, 8);
+        JSONObject registered = register(handle);
+        api.signIn(registered.getString("accessToken"));
+        JSONObject status = api.call("GET", "/api/v1/auth/email-verification", null);
+        assertFalse(status.getBoolean("verified"));
+        assertTrue(status.getString("maskedEmail").endsWith("@seven.test"));
+        assertFalse(status.toString().contains(handle + "@seven.test"));
+
+        // Local Android E2E has no SMTP credentials; it must reject delivery.
+        try {
+            api.call("POST", "/api/v1/auth/email-verification/send", null);
+            fail("Sem SMTP configurado, nunca declarar código enviado.");
+        } catch (SevenApiClient.ApiError expected) {
+            assertEquals(503, expected.status);
+        }
+        assertFalse(api.call("GET", "/api/v1/auth/email-verification", null)
+                .getBoolean("verified"));
+    }
 }

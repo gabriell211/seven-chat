@@ -30,6 +30,12 @@ public class ApiErrorHandler {
         return response(HttpStatus.CONFLICT, "CONFLICT", "E-mail ou usuário já cadastrado.");
     }
 
+    @ExceptionHandler(ApiExceptions.EmailUnavailable.class)
+    ResponseEntity<ApiDto.Error> emailUnavailable() {
+        return response(HttpStatus.SERVICE_UNAVAILABLE, "EMAIL_UNAVAILABLE",
+                "O envio de e-mails está indisponível.");
+    }
+
     @ExceptionHandler(ApiExceptions.TooManyRequests.class)
     ResponseEntity<ApiDto.Error> tooManyRequests() {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)

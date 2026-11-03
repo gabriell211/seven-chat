@@ -89,3 +89,28 @@ O Google Cloud Run oferece franquia gratuita mensal, mas **precisa de projeto Cl
 
 Nenhuma release foi liberada. Todos os requisitos obrigatórios constam em `release-certification.json` e são bloqueados por `scripts/release_gate.py` caso não estejam homologados.
 
+
+## Verificação de e-mail (implementação incremental)
+
+A migração Flyway V6 acrescenta `email_verified_at` e uma tabela de códigos com
+HMAC-SHA256 (o código puro **não é armazenado**). Os códigos de 8 dígitos são
+gerados criptograficamente, expiram em 15 minutos e permitem até 5 tentativas.
+Pedidos de envio autenticados são limitados a 3 por hora (PostgreSQL).
+
+| Método | Caminho | Autenticação | Resultado |
+| --- | --- | --- | --- |
+| GET | `/api/v1/auth/email-verification` | Bearer | E-mail mascarado e estado |
+| POST | `/api/v1/auth/email-verification/send` | Bearer | 202 depois de aceite pelo SMTP |
+| POST | `/api/v1/auth/email-verification/confirm` | Bearer | JSON `{"code":"12345678"}` |
+
+Configure exclusivamente no backend: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+`SMTP_PASSWORD`, `SMTP_AUTH`, `SMTP_STARTTLS`, `SEVEN_MAIL_FROM` e
+`SEVEN_EMAIL_CODE_PEPPER` (segredo aleatório de ao menos 32 caracteres).
+Sem SMTP/segredo configurados, o envio retorna **503 EMAIL_UNAVAILABLE**;
+não há envio falso nem token exposto no corpo da resposta.
+
+O CI testa o protocolo com um servidor SMTP efêmero e o PostgreSQL real;
+isso não certifica entrega em caixas externas. O recurso fica acessível em
+Configurações > Verificar meu e-mail. Para preservar as contas e aplicativos
+existentes, login e funcionalidades ainda não são condicionados ao estado
+`email_verified_at`; o rollout obrigatório requer plano separado.

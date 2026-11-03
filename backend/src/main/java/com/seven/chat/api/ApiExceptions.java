@@ -21,6 +21,10 @@ public final class ApiExceptions {
         public NotFound() { super("Recurso não encontrado."); }
     }
 
+    public static final class EmailUnavailable extends RuntimeException {
+        public EmailUnavailable() { super("O envio de e-mails está indisponível."); }
+    }
+
     public static final class TooManyRequests extends RuntimeException {
         public TooManyRequests() { super("Muitas tentativas. Tente novamente mais tarde."); }
     }

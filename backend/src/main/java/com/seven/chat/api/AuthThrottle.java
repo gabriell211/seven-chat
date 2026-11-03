@@ -61,6 +61,10 @@ public class AuthThrottle {
         check("login-account", email.trim().toLowerCase(Locale.ROOT), 8, 15);
     }
 
+    public void emailVerificationSendAttempt(String accountId) {
+        check("email-verification-account", accountId, 3, 60);
+    }
+
     public void passwordChangeAttempt(String accountId) {
         check("change-password-account", accountId, 8, 15);
     }
