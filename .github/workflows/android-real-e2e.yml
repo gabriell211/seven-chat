@@ -110,11 +110,7 @@ jobs:
           disable-animations: true
           emulator-boot-timeout: 600
           script: |
-            if ! curl -fsS --max-time 4 http://127.0.0.1:8080/api/v1/health >/dev/null; then
-              echo "::error::Local API stopped before Android tests; last server logs:"
-              tail -n 80 /tmp/seven-api-local.log
-              exit 1
-            fi
+            bash -euo pipefail -c 'curl -fsS --max-time 4 http://127.0.0.1:8080/api/v1/health >/dev/null || { echo "::error::Local API offline before Android tests"; tail -n 80 /tmp/seven-api-local.log; exit 1; }'
             bash -euo pipefail -c 'gradle --no-daemon --warning-mode all connectedDebugAndroidTest 2>&1 | tee /tmp/seven-android-e2e.log'
             python3 scripts/check_ci_warnings.py /tmp/seven-android-e2e.log
 
